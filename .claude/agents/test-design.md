@@ -134,15 +134,6 @@ When existing function/hook modified and test file exists.
 - Add empty test cases
 - Maintain existing code style
 
-Step 6: Test Design Document
-
-Create docs/test-designs/[feature-name]-test-design.md with:
-- Test Strategy: Overall approach
-- Test File Structure: Files to create/modify
-- Test Case List: Organized by type (unit/hooks/integration)
-- Test Dependencies: Mock data, helpers, MSW handlers
-- Notes: Special considerations, relationships with existing tests
-
 TDD Position:
 
 This agent prepares TDD "Red" phase:
