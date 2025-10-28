@@ -131,7 +131,6 @@ Create docs/features/[feature-name].md with:
 - Behavior Scenarios: Happy path, error flow, edge cases (Given-When-Then format)
 - Acceptance Criteria: Implementation completion checklist, test requirements
 - Constraints: Technical, performance, accessibility, security
-- Estimated Scope: Time, test counts
 
 On Completion:
 
