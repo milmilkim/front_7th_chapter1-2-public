@@ -95,119 +95,26 @@ it('일정 추가 시 목록에 표시된다', async () => {
 
 Step 4: React Testing Library Rules (Strict Compliance)
 
-Query Priority (Must Follow):
+IMPORTANT: Follow ALL rules from docs/testing-guidelines.md strictly.
 
-1. getByRole (Most Recommended)
-```typescript
-screen.getByRole('button', { name: /제출/i })
-screen.getByRole('textbox', { name: /사용자명/i })
-```
-
-2. getByLabelText
-```typescript
-screen.getByLabelText(/이메일/i)
-```
-
-3. getByPlaceholderText
-```typescript
-screen.getByPlaceholderText(/검색어 입력/i)
-```
-
-4. getByText
-```typescript
-screen.getByText(/환영합니다/i)
-```
-
-5. getByTestId (Last Resort)
-```typescript
-screen.getByTestId('custom-component')
-```
-
-Query Variants:
-
-- getBy: When element must exist
-- queryBy: When checking element does NOT exist
-- findBy: When element appears asynchronously (wait)
-- getAllBy: When multiple elements expected
-
-Forbidden Combinations:
-
-```typescript
-// Wrong: queryBy with toBeInTheDocument
-expect(screen.queryByRole('button')).toBeInTheDocument()
-// Right: use getBy
-expect(screen.getByRole('button')).toBeInTheDocument()
-
-// Wrong: getBy with not.toBeInTheDocument
-expect(screen.getByRole('button')).not.toBeInTheDocument()
-// Right: use queryBy
-expect(screen.queryByRole('button')).not.toBeInTheDocument()
-```
-
-Must Use screen:
-
-```typescript
-// Wrong
-const { getByRole } = render(<Component />)
-
-// Right
-render(<Component />)
-screen.getByRole('button')
-```
-
-No wrapper variable:
-
-```typescript
-// Wrong
-const wrapper = render(<Component />)
-
-// Right
-render(<Component />)
-// Or if rerender needed
-const { rerender } = render(<Component />)
-```
+Key Query Rules:
+- Priority: getByRole > getByLabelText > getByPlaceholderText > getByText > getByTestId
+- Always use screen (never destructure from render)
+- No wrapper variable name
+- getBy for existence, queryBy for non-existence, findBy for async
+- See testing-guidelines.md "쿼리 우선순위" section for full details
 
 Step 5: Async Handling
 
-Use userEvent (Required):
+Critical Rules (See testing-guidelines.md "비동기 코드 테스트" for full details):
+- Always use userEvent (NEVER fireEvent): `await userEvent.click(button)`
+- Prefer findBy over waitFor: `expect(await screen.findByText('완료')).toBeInTheDocument()`
+- waitFor for assertions only (no side effects inside)
 
+Example:
 ```typescript
-// Wrong
-import { fireEvent } from '@testing-library/react'
-fireEvent.click(button)
-
-// Right
-import userEvent from '@testing-library/user-event'
-await userEvent.click(button)
-await userEvent.type(input, '입력 텍스트')
-```
-
-Use findBy for Async Elements:
-
-```typescript
-// Wrong
-await waitFor(() => {
-  expect(screen.getByText('완료')).toBeInTheDocument()
-})
-
-// Right
+await userEvent.click(screen.getByRole('button'))
 expect(await screen.findByText('완료')).toBeInTheDocument()
-```
-
-waitFor Correct Usage (Assertions Only):
-
-```typescript
-// Wrong: Side effects inside waitFor
-await waitFor(() => {
-  fireEvent.click(button)
-  expect(screen.getByText('결과')).toBeInTheDocument()
-})
-
-// Right: Side effects outside
-await userEvent.click(button)
-await waitFor(() => {
-  expect(screen.getByText('결과')).toBeInTheDocument()
-})
 ```
 
 Step 6: Hook Testing
@@ -243,36 +150,20 @@ it('일정 저장 시 API를 호출한다', async () => {
 
 Step 7: Mock Usage (Minimize)
 
-Function Mock:
-```typescript
-const mockCallback = vi.fn()
+Use mocks only when necessary. See testing-guidelines.md "Mock과 Stub" section.
 
-it('버튼 클릭 시 콜백이 호출된다', async () => {
-  render(<Button onClick={mockCallback} />)
-  await userEvent.click(screen.getByRole('button'))
-  expect(mockCallback).toHaveBeenCalledTimes(1)
-})
-```
+Quick Reference:
+- Function mocks: `const mockFn = vi.fn()`
+- API mocks: Use MSW with `server.use(http.get('/api/...', () => ...))`
+- Reuse existing: Check src/__mocks__/ first
 
-MSW for API Mock:
+Example:
 ```typescript
 import { server } from '@/__mocks__/handlers'
 import { http, HttpResponse } from 'msw'
 
-it('API 에러 시 에러 메시지를 표시한다', async () => {
-  // Given: Override handler for this test
-  server.use(
-    http.get('/api/events', () => {
-      return HttpResponse.json({ error: '서버 에러' }, { status: 500 })
-    })
-  )
-  
-  // When
-  render(<EventList />)
-  
-  // Then
-  expect(await screen.findByText(/에러가 발생했습니다/i)).toBeInTheDocument()
-})
+// Override for specific test
+server.use(http.get('/api/events', () => HttpResponse.json({ error: 'Error' }, { status: 500 })))
 ```
 
 Step 8: Run Tests and Verify Failure
@@ -299,41 +190,13 @@ If test passes: Test may be wrong or implementation already exists (verify)
 
 Test Writing Checklist:
 
-Structure:
-- [ ] Given-When-Then comments clear
-- [ ] One concept per test
-- [ ] Test description specific
-
-Queries:
-- [ ] Using screen
-- [ ] getByRole prioritized
-- [ ] Correct query variant (getBy/queryBy/findBy)
-- [ ] No container.querySelector
-
-Async:
-- [ ] Using userEvent (not fireEvent)
-- [ ] findBy for async elements
-- [ ] No side effects in waitFor
-
-Mocks:
-- [ ] Mocks only when necessary
-- [ ] Reused existing mock data
-- [ ] MSW for API mocking
-
-Accessibility:
-- [ ] Finding elements by role
-- [ ] Accessible name verified
-- [ ] Keyboard navigation tested (if applicable)
-
-Independence:
-- [ ] No dependency on other tests
-- [ ] Initialized with beforeEach
-- [ ] Order-independent
-
-Existing Code:
-- [ ] Leveraged reusable utilities
-- [ ] Used existing mock data
-- [ ] Followed existing test patterns
+- [ ] Given-When-Then structure with clear comments
+- [ ] Using screen (not destructuring render)
+- [ ] getByRole prioritized, correct query variant (getBy/queryBy/findBy)
+- [ ] userEvent (NEVER fireEvent), findBy for async
+- [ ] Mocks minimal, reused existing mock data
+- [ ] Test independent, no dependency on other tests
+- [ ] Leveraged existing utilities from src/__tests__/utils.ts
 
 On Completion:
 
@@ -344,70 +207,22 @@ On Completion:
 
 Key Principles:
 
-- TDD Red Phase: Tests must fail, no implementation code
-- One at a time: Complete one test, run it, verify failure, move to next
-- Strict Rules: All testing-guidelines.md rules, RTL query priority, async handling
-- Existing Code First: Don't reinvent, reuse utilities, maintain patterns
-- Accessibility Auto-Verification: Role usage enforces semantics, verify accessible names
-
-Critical Rules:
-
-- Write test code only, run to confirm failure
-- getByRole priority, use checklist
-- Always userEvent, await required
-- findBy priority, waitFor for assertions only
-- Actual implementation priority, MSW for API only
-- Always use screen
-- Check utils.ts and __mocks__ first
-- Given-When-Then clear, specific descriptions
+- TDD Red Phase: Tests must fail, NO implementation code
+- One at a time: Write → Run → Verify failure → Next
+- Follow testing-guidelines.md strictly (all RTL rules, async handling, accessibility)
+- Reuse existing: Check src/__tests__/utils.ts and src/__mocks__/ first
 - Use Korean for test descriptions (project convention)
 
-Common Mistakes and Prevention:
+Common Mistakes (Avoid These):
 
-- Mistake 1: Writing implementation code
-  Prevention: Write test only, run to confirm failure
+- Writing implementation code → Write tests only
+- Using fireEvent → Always userEvent with await
+- Wrong query (queryBy + toBeInTheDocument) → Use getBy for existence checks
+- Side effects in waitFor → Use findBy or move side effects outside
+- Excessive mocking → Reuse existing mocks from src/__mocks__/
+- Using container.querySelector → Always use screen
+- Ignoring existing patterns → Read similar test files first
 
-- Mistake 2: Wrong query usage
-  Prevention: getByRole priority, check checklist
+Debug Tools: `screen.debug()`, `logRoles(container)`, `it.only()`, `it.skip()`
 
-- Mistake 3: Using fireEvent
-  Prevention: Always userEvent, await required
-
-- Mistake 4: waitFor misuse
-  Prevention: findBy priority, waitFor assertions only
-
-- Mistake 5: Excessive mocking
-  Prevention: Real implementation first, MSW for API only
-
-- Mistake 6: Using container queries
-  Prevention: Always use screen
-
-- Mistake 7: Ignoring existing code
-  Prevention: Check utils.ts and __mocks__ first
-
-Debug Tools When Needed:
-
-```typescript
-// Output current DOM
-screen.debug()
-
-// Output specific element
-screen.debug(screen.getByRole('button'))
-
-// Log available roles
-import { logRoles } from '@testing-library/react'
-const { container } = render(<Component />)
-logRoles(container)
-
-// Run single test
-it.only('이 테스트만 실행', () => {})
-
-// Skip test
-it.skip('이 테스트는 스킵', () => {})
-```
-
-Project Specifics:
-
-- React 19: Using React Testing Library 16.3.0
-- Vitest: Use vi.fn(), vi.mock() (not jest)
-- TypeScript: No any, specify mock types, define test data types
+Project: React 19 + RTL 16.3.0 + Vitest (use vi.fn/vi.mock) + TypeScript strict (no any)
