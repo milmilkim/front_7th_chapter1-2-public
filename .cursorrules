@@ -1,0 +1,10 @@
+CRITICAL: AI prompts and agent content rules
+
+MUST follow when generating prompts/agents/AI content:
+- Write in English ONLY
+- NEVER use bold, emojis, or excessive markup
+- Minimize tokens while maintaining clarity
+- Use plain text and simple markdown only
+- NO decorative formatting
+
+HIGHEST PRIORITY for /agents/ and /docs/ directories.

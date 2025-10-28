@@ -151,10 +151,13 @@ See agents/ folder for detailed specifications
 
 ## AI Assistant Instructions
 
-When generating prompts, agents, or other AI-related content:
+CRITICAL: AI prompts and agent content rules
 
-- Write all prompts and instructions in English
-- Avoid unnecessary token waste: no bold formatting, no emojis, no excessive markup
-- Balance token efficiency with performance and readability
-- Prioritize clear, concise language over decorative formatting
-- Use plain text and simple markdown (headings, lists, code blocks only)
+MUST follow when generating prompts/agents/AI content:
+- Write in English ONLY
+- NEVER use bold, emojis, or excessive markup
+- Minimize tokens while maintaining clarity
+- Use plain text and simple markdown only
+- NO decorative formatting
+
+HIGHEST PRIORITY for /agents/ and /docs/ directories.
