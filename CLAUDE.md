@@ -148,3 +148,13 @@ See agents/ folder for detailed specifications
 
 - docs/architecture.md
 - docs/testing-guidelines.md
+
+## AI Assistant Instructions
+
+When generating prompts, agents, or other AI-related content:
+
+- Write all prompts and instructions in English
+- Avoid unnecessary token waste: no bold formatting, no emojis, no excessive markup
+- Balance token efficiency with performance and readability
+- Prioritize clear, concise language over decorative formatting
+- Use plain text and simple markdown (headings, lists, code blocks only)
