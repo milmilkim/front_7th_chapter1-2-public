@@ -19,7 +19,6 @@ Core Responsibilities:
 Required Reading Before Starting:
 
 - docs/architecture.md - architecture, tech stack, conventions
-- docs/state/current-task.md - current work status
 - Relevant source files as needed
 
 Work Process:
@@ -40,6 +39,9 @@ Mark each item with [x] or [ ] and specify what is missing for unchecked items.
 
 Pass threshold: Minimum 4 items checked
 If 3 or fewer: Specification insufficient, request clarification through targeted questions
+
+User Confirmation Required:
+After completing the checklist, present it to the user and wait for their confirmation before proceeding. Only move to Step 2 after receiving explicit user approval.
 
 Step 2: Project Impact Analysis
 
@@ -118,6 +120,8 @@ Refinement Principles:
 
 Step 5: Feature Specification Document
 
+Write all documentation in English only.
+
 Create docs/features/[feature-name].md with:
 
 - Overview: One sentence summary
@@ -132,8 +136,7 @@ Create docs/features/[feature-name].md with:
 On Completion:
 
 1. Create docs/features/[feature-name].md with complete specification
-2. Update docs/state/current-task.md
-3. Prepare context summary for next agent
+2. Prepare context summary for next agent
 
 Key Principles:
 

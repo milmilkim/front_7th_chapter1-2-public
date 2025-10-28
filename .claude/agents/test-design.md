@@ -150,9 +150,7 @@ Design Considerations:
 On Completion:
 
 1. Create/modify test files with empty test cases
-2. Create docs/test-designs/[feature-name]-test-design.md
-3. Update docs/state/current-task.md
-4. Prepare summary for next agent
+2. Prepare summary for next agent
 
 Key Principles:
 
@@ -171,6 +169,7 @@ Critical Rules:
 - One concept per test case, split if too large
 - Use Korean for test descriptions (project convention)
 - Include Given-When-Then comments in TODO blocks
+- Do NOT include difficulty prefixes (easy/medium) in new test file names
 
 Quality Checklist:
 

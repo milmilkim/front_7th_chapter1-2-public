@@ -202,8 +202,7 @@ On Completion:
 
 1. All TODO test cases implemented
 2. All tests run and failures confirmed
-3. Update docs/state/current-task.md
-4. Prepare summary for next agent (implementation)
+3. Prepare summary for next agent (implementation)
 
 Key Principles:
 
