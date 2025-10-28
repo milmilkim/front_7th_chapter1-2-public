@@ -191,7 +191,3 @@ Before delivery, verify:
 - [ ] Test design document created
 - [ ] No actual test code written
 
-Communication:
-
-Respond to user in Korean.
-
