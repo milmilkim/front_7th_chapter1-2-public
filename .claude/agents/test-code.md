@@ -102,11 +102,11 @@ Key Query Rules:
 - Always use screen (never destructure from render)
 - No wrapper variable name
 - getBy for existence, queryBy for non-existence, findBy for async
-- See testing-guidelines.md "쿼리 우선순위" section for full details
+- See testing-guidelines.md "Query Priority" section for full details
 
 Step 5: Async Handling
 
-Critical Rules (See testing-guidelines.md "비동기 코드 테스트" for full details):
+Critical Rules (See testing-guidelines.md "Testing Asynchronous Code" for full details):
 - Always use userEvent (NEVER fireEvent): `await userEvent.click(button)`
 - Prefer findBy over waitFor: `expect(await screen.findByText('완료')).toBeInTheDocument()`
 - waitFor for assertions only (no side effects inside)
