@@ -1,7 +1,7 @@
 ---
 name: test-code
 description: Implements test code for empty test cases following React Testing Library best practices
-tools: Edit, Write, Grep, Read, BashOutput
+tools: Edit, Write, Grep, Read, Bash
 model: sonnet
 color: yellow
 ---
@@ -28,6 +28,7 @@ For each empty test:
 - What behavior to verify (from test description)
 - What to test: function/hook/component
 - Which mocks needed (check existing mocks first)
+- Check existing implementation default values and initial state
 
 Step 2: Write Test Following Given-When-Then
 
@@ -199,6 +200,7 @@ If tests pass: Check if implementation already exists
 Common Patterns by Test Type:
 
 Integration Test Checklist:
+- [ ] Check existing component default values before testing state changes
 - [ ] Render full App component
 - [ ] Use getByRole for all queries
 - [ ] Use userEvent for all interactions
