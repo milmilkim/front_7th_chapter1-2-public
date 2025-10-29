@@ -2,6 +2,7 @@ import { useSnackbar } from 'notistack';
 import { useEffect, useState } from 'react';
 
 import { Event, EventForm } from '../types';
+import { generateRecurringEvents } from '../utils/recurringEventUtils';
 
 export const useEventOperations = (editing: boolean, onSave?: () => void) => {
   const [events, setEvents] = useState<Event[]>([]);
@@ -69,6 +70,40 @@ export const useEventOperations = (editing: boolean, onSave?: () => void) => {
     }
   };
 
+  const saveEventList = async (eventList: EventForm[]) => {
+    try {
+      // 반복 일정이면 이벤트 생성
+      const eventsToSave: (Event | EventForm)[] = [];
+      for (const eventData of eventList) {
+        if (eventData.repeat.type !== 'none') {
+          // 반복 일정: generateRecurringEvents로 여러 이벤트 생성
+          const recurringEvents = generateRecurringEvents(eventData);
+          eventsToSave.push(...recurringEvents);
+        } else {
+          // 일반 일정: 그대로 추가 (id는 서버에서 생성)
+          eventsToSave.push(eventData);
+        }
+      }
+
+      const response = await fetch('/api/events-list', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ events: eventsToSave }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to save event list');
+      }
+
+      await fetchEvents();
+      onSave?.();
+      enqueueSnackbar('반복 일정이 추가되었습니다.', { variant: 'success' });
+    } catch (error) {
+      console.error('Error saving event list:', error);
+      enqueueSnackbar('일정 목록 저장 실패', { variant: 'error' });
+    }
+  };
+
   async function init() {
     await fetchEvents();
     enqueueSnackbar('일정 로딩 완료!', { variant: 'info' });
@@ -79,5 +114,5 @@ export const useEventOperations = (editing: boolean, onSave?: () => void) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  return { events, fetchEvents, saveEvent, deleteEvent };
+  return { events, fetchEvents, saveEvent, deleteEvent, saveEventList };
 };
