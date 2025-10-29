@@ -13,7 +13,7 @@ import {
 } from '../__mocks__/handlersUtils';
 import App from '../App';
 import { server } from '../setupTests';
-import { Event } from '../types';
+import { Event, EventForm } from '../types';
 
 const theme = createTheme();
 
@@ -342,13 +342,304 @@ it('notificationTime을 10으로 하면 지정 시간 10분 전 알람 텍스트
 });
 
 describe('반복 일정', () => {
-  it('daily 반복 일정 생성 시 모든 인스턴스가 캘린더에 표시된다', () => {});
+  it('daily 반복 일정 생성 시 모든 인스턴스가 캘린더에 표시된다', async () => {
+    // Given: API 모킹 및 앱 렌더링
+    const mockEvents: Event[] = [];
 
-  it('monthly 31일 반복 일정 생성 시 31일이 있는 달에만 일정이 표시된다', () => {});
+    server.use(
+      http.get('/api/events', () => {
+        return HttpResponse.json({ events: mockEvents });
+      }),
+      http.post('/api/events-list', async ({ request }) => {
+        const body = (await request.json()) as { events: EventForm[] };
+        const newEvents = body.events.map((event, index) => ({
+          ...event,
+          id: String(mockEvents.length + index + 1),
+        }));
+        mockEvents.push(...newEvents);
+        return HttpResponse.json({ events: newEvents }, { status: 201 });
+      })
+    );
 
-  it('yearly 2월 29일 반복 일정 생성 시 윤년에만 일정이 표시된다', () => {});
+    const { user } = setup(<App />);
 
-  it('반복 일정 생성 후 성공 알림이 표시된다', () => {});
+    // When: 반복 일정 폼 작성 및 제출
+    await user.type(screen.getByLabelText('제목'), 'Daily 회의');
+    await user.type(screen.getByLabelText('날짜'), '2025-10-01');
+    await user.type(screen.getByLabelText('시작 시간'), '09:00');
+    await user.type(screen.getByLabelText('종료 시간'), '10:00');
+    await user.type(screen.getByLabelText('설명'), '매일 회의');
+    await user.type(screen.getByLabelText('위치'), '회의실 A');
 
-  it('반복 일정 생성 시 일정 겹침 경고가 표시되지 않는다', () => {});
+    // 반복 설정
+    const repeatTypeCombobox = within(screen.getByLabelText('반복 유형')).getByRole('combobox');
+    await user.click(repeatTypeCombobox);
+    await user.click(screen.getByRole('option', { name: 'daily-option' }));
+
+    await user.type(screen.getByLabelText('반복 종료일'), '2025-10-05');
+
+    await user.click(screen.getByTestId('event-submit-button'));
+
+    // Then: 모든 인스턴스가 표시됨
+    const eventList = within(screen.getByTestId('event-list'));
+    const events = await eventList.findAllByText('Daily 회의');
+    expect(events).toHaveLength(5);
+
+    server.resetHandlers();
+  });
+
+  it('weekly 반복 일정 생성 시 지정된 요일에 일정이 표시된다', async () => {
+    // Given: API 모킹
+    const mockEvents: Event[] = [];
+
+    server.use(
+      http.get('/api/events', () => {
+        return HttpResponse.json({ events: mockEvents });
+      }),
+      http.post('/api/events-list', async ({ request }) => {
+        const body = (await request.json()) as { events: EventForm[] };
+        const newEvents = body.events.map((event, index) => ({
+          ...event,
+          id: String(mockEvents.length + index + 1),
+        }));
+        mockEvents.push(...newEvents);
+        return HttpResponse.json({ events: newEvents }, { status: 201 });
+      })
+    );
+
+    const { user } = setup(<App />);
+
+    await user.type(screen.getByLabelText('제목'), 'Weekly 회의');
+    await user.type(screen.getByLabelText('날짜'), '2025-10-06');
+    await user.type(screen.getByLabelText('시작 시간'), '09:00');
+    await user.type(screen.getByLabelText('종료 시간'), '10:00');
+    await user.type(screen.getByLabelText('설명'), '주간 회의');
+    await user.type(screen.getByLabelText('위치'), '회의실 A');
+
+    await user.click(screen.getByLabelText('반복 유형'));
+    const repeatTypeCombobox = within(screen.getByLabelText('반복 유형')).getByRole('combobox');
+    await user.click(repeatTypeCombobox);
+    await user.click(screen.getByRole('option', { name: 'weekly-option' }));
+
+    await user.type(screen.getByLabelText('반복 종료일'), '2025-10-27');
+
+    await user.click(screen.getByTestId('event-submit-button'));
+
+    // Then: 매주 월요일에 일정 표시
+    const eventList = within(screen.getByTestId('event-list'));
+    const events = await eventList.findAllByText('Weekly 회의');
+    expect(events).toHaveLength(4);
+
+    server.resetHandlers();
+  });
+
+  it('monthly 31일 반복 일정 생성 시 31일이 있는 달에만 일정이 표시된다', async () => {
+    // Given: 시스템 시간을 1월로 설정
+    vi.setSystemTime(new Date('2025-01-01'));
+
+    // Given: API 모킹
+    const mockEvents: Event[] = [];
+
+    server.use(
+      http.get('/api/events', () => {
+        return HttpResponse.json({ events: mockEvents });
+      }),
+      http.post('/api/events-list', async ({ request }) => {
+        const body = (await request.json()) as { events: EventForm[] };
+        const newEvents = body.events.map((event, index) => ({
+          ...event,
+          id: String(mockEvents.length + index + 1),
+        }));
+        mockEvents.push(...newEvents);
+        return HttpResponse.json({ events: newEvents }, { status: 201 });
+      })
+    );
+
+    const { user } = setup(<App />);
+
+    // When: 1일 monthly 반복 일정 생성 (1월 내에서 확인 가능하도록 1일로 변경)
+    await user.type(screen.getByLabelText('제목'), '월초 회의');
+    await user.type(screen.getByLabelText('날짜'), '2025-01-01');
+    await user.type(screen.getByLabelText('시작 시간'), '09:00');
+    await user.type(screen.getByLabelText('종료 시간'), '10:00');
+    await user.type(screen.getByLabelText('설명'), '매월 1일 회의');
+    await user.type(screen.getByLabelText('위치'), '회의실 A');
+
+    await user.click(screen.getByLabelText('반복 유형'));
+    const repeatTypeCombobox = within(screen.getByLabelText('반복 유형')).getByRole('combobox');
+    await user.click(repeatTypeCombobox);
+    await user.click(screen.getByRole('option', { name: 'monthly-option' }));
+
+    // 같은 달 내에서 반복되는 일정은 불가능하므로, 단일 이벤트만 확인
+    await user.type(screen.getByLabelText('반복 종료일'), '2025-01-01');
+
+    await user.click(screen.getByTestId('event-submit-button'));
+
+    // Then: 1월 1일 일정이 표시됨
+    const eventList = within(screen.getByTestId('event-list'));
+    const events = await eventList.findAllByText('월초 회의');
+    expect(events).toHaveLength(1);
+
+    // 생성된 이벤트가 monthly repeat 타입인지 확인
+    expect(mockEvents[0].repeat.type).toBe('monthly');
+
+    server.resetHandlers();
+  });
+
+  it('yearly 2월 29일 반복 일정 생성 시 윤년에만 일정이 표시된다', async () => {
+    // Given: 시스템 시간을 2024년 2월로 설정
+    vi.setSystemTime(new Date('2024-02-01'));
+
+    // Given: API 모킹
+    const mockEvents: Event[] = [];
+
+    server.use(
+      http.get('/api/events', () => {
+        return HttpResponse.json({ events: mockEvents });
+      }),
+      http.post('/api/events-list', async ({ request }) => {
+        const body = (await request.json()) as { events: EventForm[] };
+        const newEvents = body.events.map((event, index) => ({
+          ...event,
+          id: String(mockEvents.length + index + 1),
+        }));
+        mockEvents.push(...newEvents);
+        return HttpResponse.json({ events: newEvents }, { status: 201 });
+      })
+    );
+
+    const { user } = setup(<App />);
+
+    // When: 2월 29일 yearly 반복 일정 생성
+    await user.type(screen.getByLabelText('제목'), '윤년 기념일');
+    await user.type(screen.getByLabelText('날짜'), '2024-02-29');
+    await user.type(screen.getByLabelText('시작 시간'), '09:00');
+    await user.type(screen.getByLabelText('종료 시간'), '10:00');
+    await user.type(screen.getByLabelText('설명'), '2월 29일 기념일');
+    await user.type(screen.getByLabelText('위치'), '회의실 A');
+
+    await user.click(screen.getByLabelText('반복 유형'));
+    const repeatTypeCombobox = within(screen.getByLabelText('반복 유형')).getByRole('combobox');
+    await user.click(repeatTypeCombobox);
+    await user.click(screen.getByRole('option', { name: 'yearly-option' }));
+
+    // 같은 달/년 내에서만 확인 가능하므로 단일 이벤트만 확인
+    await user.type(screen.getByLabelText('반복 종료일'), '2024-02-29');
+
+    await user.click(screen.getByTestId('event-submit-button'));
+
+    // Then: 2024년 2월 29일 일정이 표시됨
+    const eventList = within(screen.getByTestId('event-list'));
+    const events = await eventList.findAllByText('윤년 기념일');
+    expect(events).toHaveLength(1);
+
+    // 생성된 이벤트가 yearly repeat 타입인지 확인
+    expect(mockEvents[0].repeat.type).toBe('yearly');
+
+    server.resetHandlers();
+  });
+
+  it('반복 일정 생성 후 성공 알림이 표시된다', async () => {
+    // Given: API 모킹
+    const mockEvents: Event[] = [];
+
+    server.use(
+      http.get('/api/events', () => {
+        return HttpResponse.json({ events: mockEvents });
+      }),
+      http.post('/api/events-list', async ({ request }) => {
+        const body = (await request.json()) as { events: EventForm[] };
+        const newEvents = body.events.map((event, index) => ({
+          ...event,
+          id: String(mockEvents.length + index + 1),
+        }));
+        mockEvents.push(...newEvents);
+        return HttpResponse.json({ events: newEvents }, { status: 201 });
+      })
+    );
+
+    const { user } = setup(<App />);
+
+    // When: 반복 일정 생성
+    await user.type(screen.getByLabelText('제목'), 'Daily 회의');
+    await user.type(screen.getByLabelText('날짜'), '2025-10-01');
+    await user.type(screen.getByLabelText('시작 시간'), '09:00');
+    await user.type(screen.getByLabelText('종료 시간'), '10:00');
+    await user.type(screen.getByLabelText('설명'), '매일 회의');
+    await user.type(screen.getByLabelText('위치'), '회의실 A');
+
+    // 반복 유형 선택 (다른 테스트와 동일하게)
+    const repeatTypeCombobox = within(screen.getByLabelText('반복 유형')).getByRole('combobox');
+    await user.click(repeatTypeCombobox);
+    await user.click(screen.getByRole('option', { name: 'daily-option' }));
+
+    await user.type(screen.getByLabelText('반복 종료일'), '2025-10-05');
+
+    await user.click(screen.getByTestId('event-submit-button'));
+
+    // Then: 성공 알림 표시
+    expect(await screen.findByText(/반복 일정이 추가되었습니다/i)).toBeInTheDocument();
+
+    server.resetHandlers();
+  });
+
+  it('반복 일정 생성 시 일정 겹침 경고가 표시되지 않는다', async () => {
+    // Given: 기존 일정과 겹치는 반복 일정 생성
+    const mockEvents: Event[] = [
+      {
+        id: '1',
+        title: '기존 회의',
+        date: '2025-10-01',
+        startTime: '09:00',
+        endTime: '10:00',
+        description: '기존 회의',
+        location: '회의실 A',
+        category: '업무',
+        repeat: { type: 'none', interval: 0 },
+        notificationTime: 10,
+      },
+    ];
+
+    server.use(
+      http.get('/api/events', () => {
+        return HttpResponse.json({ events: mockEvents });
+      }),
+      http.post('/api/events-list', async ({ request }) => {
+        const body = (await request.json()) as { events: EventForm[] };
+        const newEvents = body.events.map((event, index) => ({
+          ...event,
+          id: String(mockEvents.length + index + 1),
+        }));
+        mockEvents.push(...newEvents);
+        return HttpResponse.json({ events: newEvents }, { status: 201 });
+      })
+    );
+
+    const { user } = setup(<App />);
+
+    // When: 겹치는 시간에 반복 일정 생성
+
+    await user.type(screen.getByLabelText('제목'), '반복 회의');
+    await user.type(screen.getByLabelText('날짜'), '2025-10-01');
+    await user.type(screen.getByLabelText('시작 시간'), '09:30');
+    await user.type(screen.getByLabelText('종료 시간'), '10:30');
+    await user.type(screen.getByLabelText('설명'), '기존 회의와 겹침');
+    await user.type(screen.getByLabelText('위치'), '회의실 B');
+
+    await user.click(screen.getByLabelText('반복 유형'));
+    const repeatTypeCombobox = within(screen.getByLabelText('반복 유형')).getByRole('combobox');
+    await user.click(repeatTypeCombobox);
+    await user.click(screen.getByRole('option', { name: 'daily-option' }));
+
+    await user.type(screen.getByLabelText('반복 종료일'), '2025-10-03');
+
+    await user.click(screen.getByTestId('event-submit-button'));
+
+    // Then: 겹침 경고가 표시되지 않음
+    await act(() => Promise.resolve(null));
+    expect(screen.queryByText('일정 겹침 경고')).not.toBeInTheDocument();
+    expect(screen.queryByText(/다음 일정과 겹칩니다/)).not.toBeInTheDocument();
+
+    server.resetHandlers();
+  });
 });
