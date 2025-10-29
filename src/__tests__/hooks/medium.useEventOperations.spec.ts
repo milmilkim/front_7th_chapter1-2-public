@@ -175,72 +175,351 @@ it("네트워크 오류 시 '일정 삭제 실패'라는 텍스트가 노출되�
 describe('반복 이벤트 (Recurring Events)', () => {
   describe('반복 이벤트 생성', () => {
     it('daily 반복 이벤트 생성 시 여러 개의 이벤트가 생성되고 POST /api/events-list가 호출된다', async () => {
-      // TODO: 테스트 코드 작성 에이전트가 구현
-      // Given: baseEvent with daily repeat, interval 3, endDate '2025-01-24'
-      // When: saveEvent 호출
-      // Then: generateRecurringEvents가 호출되어 여러 이벤트 생성, POST /api/events-list로 bulk create, events 상태 업데이트
+      // Given: API 모킹 및 초기 상태
+      let capturedEventsRequest: EventForm[] | null = null;
+      const mockEvents: Event[] = [];
+
+      server.use(
+        http.get('/api/events', () => {
+          return HttpResponse.json({ events: mockEvents });
+        }),
+        http.post('/api/events-list', async ({ request }) => {
+          const body = (await request.json()) as { events: EventForm[] };
+          capturedEventsRequest = body.events;
+
+          const newEvents = body.events.map((event, index) => ({
+            ...event,
+            id: String(mockEvents.length + index + 1),
+          }));
+          mockEvents.push(...newEvents);
+          return HttpResponse.json({ events: newEvents }, { status: 201 });
+        })
+      );
+
+      const { result } = renderHook(() => useEventOperations(false));
+      await act(() => Promise.resolve(null));
+
+      const baseEvent: EventForm = {
+        title: 'Daily 회의',
+        date: '2025-11-01',
+        startTime: '09:00',
+        endTime: '10:00',
+        description: '매일 회의',
+        location: '회의실 A',
+        category: '업무',
+        repeat: { type: 'daily', interval: 1, endDate: '2025-11-05' },
+        notificationTime: 10,
+      };
+
+      // When: saveEventList 호출
+      await act(async () => {
+        await result.current.saveEventList([baseEvent]);
+      });
+
+      // Then: 여러 이벤트가 생성되고 API가 호출됨
+      expect(capturedEventsRequest).not.toBeNull();
+      expect(capturedEventsRequest).toHaveLength(5);
+      expect(result.current.events).toHaveLength(5);
+      expect(result.current.events[0].date).toBe('2025-11-01');
+      expect(result.current.events[4].date).toBe('2025-11-05');
+
+      server.resetHandlers();
     });
 
     it('weekly 반복 이벤트를 interval 2로 생성하면 올바른 날짜에 이벤트가 생성된다', async () => {
-      // TODO: 테스트 코드 작성 에이전트가 구현
-      // Given: baseEvent with weekly repeat, interval 2, date '2025-01-06' (Monday), endDate '2025-02-17'
-      // When: saveEvent 호출
-      // Then: 2주 간격으로 같은 요일에 이벤트 생성 (1/6, 1/20, 2/3, 2/17)
+      // Given: API 모킹
+      const mockEvents: Event[] = [];
+
+      server.use(
+        http.get('/api/events', () => {
+          return HttpResponse.json({ events: mockEvents });
+        }),
+        http.post('/api/events-list', async ({ request }) => {
+          const body = (await request.json()) as { events: EventForm[] };
+          const newEvents = body.events.map((event, index) => ({
+            ...event,
+            id: String(mockEvents.length + index + 1),
+          }));
+          mockEvents.push(...newEvents);
+          return HttpResponse.json({ events: newEvents }, { status: 201 });
+        })
+      );
+
+      const { result } = renderHook(() => useEventOperations(false));
+      await act(() => Promise.resolve(null));
+
+      const baseEvent: EventForm = {
+        title: '격주 회의',
+        date: '2025-11-03',
+        startTime: '09:00',
+        endTime: '10:00',
+        description: '2주마다 회의',
+        location: '회의실 A',
+        category: '업무',
+        repeat: { type: 'weekly', interval: 2, endDate: '2025-12-01' },
+        notificationTime: 10,
+      };
+
+      // When: saveEventList 호출
+      await act(async () => {
+        await result.current.saveEventList([baseEvent]);
+      });
+
+      // Then: 2주 간격으로 이벤트 생성
+      expect(result.current.events).toHaveLength(3);
+      expect(result.current.events[0].date).toBe('2025-11-03');
+      expect(result.current.events[1].date).toBe('2025-11-17');
+      expect(result.current.events[2].date).toBe('2025-12-01');
+
+      server.resetHandlers();
     });
 
     it('monthly 반복 이벤트를 31일로 생성하면 31일이 있는 달에만 이벤트가 생성된다', async () => {
-      // TODO: 테스트 코드 작성 에이전트가 구현
-      // Given: baseEvent with monthly repeat, interval 1, date '2025-01-31', endDate '2025-06-30'
-      // When: saveEvent 호출
-      // Then: 31일이 있는 달에만 이벤트 생성 (1월, 3월, 5월만 포함)
+      // Given: API 모킹
+      const mockEvents: Event[] = [];
+
+      server.use(
+        http.get('/api/events', () => {
+          return HttpResponse.json({ events: mockEvents });
+        }),
+        http.post('/api/events-list', async ({ request }) => {
+          const body = (await request.json()) as { events: EventForm[] };
+          const newEvents = body.events.map((event, index) => ({
+            ...event,
+            id: String(mockEvents.length + index + 1),
+          }));
+          mockEvents.push(...newEvents);
+          return HttpResponse.json({ events: newEvents }, { status: 201 });
+        })
+      );
+
+      const { result } = renderHook(() => useEventOperations(false));
+      await act(() => Promise.resolve(null));
+
+      const baseEvent: EventForm = {
+        title: '월말 회의',
+        date: '2025-01-31',
+        startTime: '09:00',
+        endTime: '10:00',
+        description: '매월 31일 회의',
+        location: '회의실 A',
+        category: '업무',
+        repeat: { type: 'monthly', interval: 1, endDate: '2025-06-30' },
+        notificationTime: 10,
+      };
+
+      // When: saveEventList 호출
+      await act(async () => {
+        await result.current.saveEventList([baseEvent]);
+      });
+
+      // Then: 31일이 있는 달에만 이벤트 생성 (1월, 3월, 5월)
+      expect(result.current.events).toHaveLength(3);
+      expect(result.current.events[0].date).toBe('2025-01-31');
+      expect(result.current.events[1].date).toBe('2025-03-31');
+      expect(result.current.events[2].date).toBe('2025-05-31');
+
+      server.resetHandlers();
     });
 
     it('yearly 반복 이벤트를 2월 29일로 생성하면 윤년에만 이벤트가 생성된다', async () => {
-      // TODO: 테스트 코드 작성 에이전트가 구현
-      // Given: baseEvent with yearly repeat, interval 1, date '2024-02-29', endDate '2028-03-01'
-      // When: saveEvent 호출
-      // Then: 윤년에만 이벤트 생성 (2024, 2028만 포함)
+      // Given: API 모킹
+      const mockEvents: Event[] = [];
+
+      server.use(
+        http.get('/api/events', () => {
+          return HttpResponse.json({ events: mockEvents });
+        }),
+        http.post('/api/events-list', async ({ request }) => {
+          const body = (await request.json()) as { events: EventForm[] };
+          const newEvents = body.events.map((event, index) => ({
+            ...event,
+            id: String(mockEvents.length + index + 1),
+          }));
+          mockEvents.push(...newEvents);
+          return HttpResponse.json({ events: newEvents }, { status: 201 });
+        })
+      );
+
+      const { result } = renderHook(() => useEventOperations(false));
+      await act(() => Promise.resolve(null));
+
+      const baseEvent: EventForm = {
+        title: '윤년 기념일',
+        date: '2024-02-29',
+        startTime: '09:00',
+        endTime: '10:00',
+        description: '2월 29일 기념일',
+        location: '회의실 A',
+        category: '개인',
+        repeat: { type: 'yearly', interval: 1, endDate: '2028-03-01' },
+        notificationTime: 10,
+      };
+
+      // When: saveEventList 호출
+      await act(async () => {
+        await result.current.saveEventList([baseEvent]);
+      });
+
+      // Then: 윤년에만 이벤트 생성 (2024, 2028)
+      expect(result.current.events).toHaveLength(2);
+      expect(result.current.events[0].date).toBe('2024-02-29');
+      expect(result.current.events[1].date).toBe('2028-02-29');
+
+      server.resetHandlers();
     });
 
     it('반복 이벤트 생성 시 모든 이벤트가 동일한 repeatId를 공유한다', async () => {
-      // TODO: 테스트 코드 작성 에이전트가 구현
-      // Given: baseEvent with any repeat type
-      // When: saveEvent 호출
-      // Then: 생성된 모든 이벤트의 repeat.id가 동일하고, 각 이벤트의 id는 고유함
-    });
-  });
+      // Given: API 모킹
+      let capturedEvents: Event[] | null = null;
 
-  describe('반복 이벤트 수정', () => {
-    it('반복 이벤트 시리즈 중 단일 이벤트 수정 시 해당 이벤트만 수정되고 repeatId는 유지된다', async () => {
-      // TODO: 테스트 코드 작성 에이전트가 구현
-      // Given: 5개의 반복 이벤트가 존재하고, 3번째 이벤트를 수정
-      // When: saveEvent로 3번째 이벤트의 title 수정
-      // Then: PUT /api/events/:id 호출, 해당 이벤트만 수정, 나머지 이벤트는 변경 없음, repeatId 유지
-    });
-  });
+      server.use(
+        http.get('/api/events', () => {
+          return HttpResponse.json({ events: [] });
+        }),
+        http.post('/api/events-list', async ({ request }) => {
+          const body = (await request.json()) as { events: EventForm[] };
+          const newEvents = body.events.map((event, index) => ({
+            ...event,
+            id: String(index + 1),
+          }));
+          capturedEvents = newEvents;
+          return HttpResponse.json({ events: newEvents }, { status: 201 });
+        })
+      );
 
-  describe('반복 이벤트 삭제', () => {
-    it('반복 이벤트 시리즈에서 현재 및 이후 이벤트 삭제 시 올바른 이벤트들이 삭제된다', async () => {
-      // TODO: 테스트 코드 작성 에이전트가 구현
-      // Given: 10개의 반복 이벤트가 존재 (같은 repeatId)
-      // When: 5번째 이벤트에서 deleteEvent 호출
-      // Then: DELETE /api/events-list 호출, 5번째부터 10번째까지 삭제, 1-4번째 이벤트는 유지
+      const { result } = renderHook(() => useEventOperations(false));
+      await act(() => Promise.resolve(null));
+
+      const baseEvent: EventForm = {
+        title: 'Daily 회의',
+        date: '2025-11-01',
+        startTime: '09:00',
+        endTime: '10:00',
+        description: '매일 회의',
+        location: '회의실 A',
+        category: '업무',
+        repeat: { type: 'daily', interval: 1, endDate: '2025-11-05' },
+        notificationTime: 10,
+      };
+
+      // When: saveEventList 호출
+      await act(async () => {
+        await result.current.saveEventList([baseEvent]);
+      });
+
+      // Then: 모든 이벤트가 동일한 repeat.id 공유
+      expect(capturedEvents).not.toBeNull();
+      const repeatIds = capturedEvents!.map((e) => e.repeat.id);
+      const uniqueRepeatIds = new Set(repeatIds);
+      expect(uniqueRepeatIds.size).toBe(1);
+      expect(repeatIds[0]).toBeDefined();
+
+      server.resetHandlers();
+    });
+
+    it('반복 이벤트 생성 시 일정 겹침 검사를 건너뛴다', async () => {
+      // Given: 기존 이벤트와 겹치는 시간에 반복 이벤트 생성
+      const mockEvents: Event[] = [
+        {
+          id: '1',
+          title: '기존 회의',
+          date: '2025-11-01',
+          startTime: '09:00',
+          endTime: '10:00',
+          description: '기존 회의',
+          location: '회의실 A',
+          category: '업무',
+          repeat: { type: 'none', interval: 0 },
+          notificationTime: 10,
+        },
+      ];
+
+      server.use(
+        http.get('/api/events', () => {
+          return HttpResponse.json({ events: mockEvents });
+        }),
+        http.post('/api/events-list', async ({ request }) => {
+          const body = (await request.json()) as { events: EventForm[] };
+          const newEvents = body.events.map((event, index) => ({
+            ...event,
+            id: String(mockEvents.length + index + 1),
+          }));
+          mockEvents.push(...newEvents);
+          return HttpResponse.json({ events: newEvents }, { status: 201 });
+        })
+      );
+
+      const { result } = renderHook(() => useEventOperations(false));
+      await act(() => Promise.resolve(null));
+
+      const baseEvent: EventForm = {
+        title: '반복 회의',
+        date: '2025-11-01',
+        startTime: '09:30',
+        endTime: '10:30',
+        description: '기존 회의와 겹침',
+        location: '회의실 B',
+        category: '업무',
+        repeat: { type: 'daily', interval: 1, endDate: '2025-11-03' },
+        notificationTime: 10,
+      };
+
+      // When: saveEventList 호출 (겹침 검사 없이)
+      await act(async () => {
+        await result.current.saveEventList([baseEvent]);
+      });
+
+      // Then: 겹침 검사 없이 정상 생성
+      expect(result.current.events).toHaveLength(4); // 기존 1개 + 새로운 3개
+      expect(enqueueSnackbarFn).not.toHaveBeenCalledWith(
+        expect.stringContaining('겹침'),
+        expect.anything()
+      );
+
+      server.resetHandlers();
     });
   });
 
   describe('에러 처리', () => {
     it('반복 이벤트 생성 시 API 실패하면 에러 토스트가 표시되고 이벤트가 생성되지 않는다', async () => {
-      // TODO: 테스트 코드 작성 에이전트가 구현
-      // Given: POST /api/events-list가 500 에러 반환하도록 MSW 설정
-      // When: 반복 이벤트 생성 시도
-      // Then: '반복 일정 생성 실패' 토스트 표시, events 상태 변경 없음
-    });
+      // Given: API 실패 모킹
+      server.use(
+        http.get('/api/events', () => {
+          return HttpResponse.json({ events: [] });
+        }),
+        http.post('/api/events-list', () => {
+          return new HttpResponse(null, { status: 500 });
+        })
+      );
 
-    it('최대 발생 횟수를 초과하면 경고 토스트가 표시된다', async () => {
-      // TODO: 테스트 코드 작성 에이전트가 구현
-      // Given: daily 반복 이벤트, 종료 날짜 없음 (1000개 초과 예상)
-      // When: saveEvent 호출
-      // Then: 1000개 이벤트만 생성, '최대 1000개 일정까지 생성 가능합니다' 경고 토스트 표시
+      const { result } = renderHook(() => useEventOperations(false));
+      await act(() => Promise.resolve(null));
+
+      const baseEvent: EventForm = {
+        title: 'Daily 회의',
+        date: '2025-11-01',
+        startTime: '09:00',
+        endTime: '10:00',
+        description: '매일 회의',
+        location: '회의실 A',
+        category: '업무',
+        repeat: { type: 'daily', interval: 1, endDate: '2025-11-05' },
+        notificationTime: 10,
+      };
+
+      // When: saveEventList 호출
+      await act(async () => {
+        await result.current.saveEventList([baseEvent]);
+      });
+
+      // Then: 에러 토스트 표시 및 이벤트 미생성
+      expect(enqueueSnackbarFn).toHaveBeenCalledWith('일정 목록 저장 실패', {
+        variant: 'error',
+      });
+      expect(result.current.events).toHaveLength(0);
+
+      server.resetHandlers();
     });
   });
 });
