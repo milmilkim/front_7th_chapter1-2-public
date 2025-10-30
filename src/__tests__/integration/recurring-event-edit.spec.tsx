@@ -279,16 +279,17 @@ describe('반복 일정 수정', () => {
         notificationTime: 10,
       };
 
-      let capturedUpdateRequest: Event | null = null;
+      let capturedUpdateRequest: any = null;
 
       server.use(
         http.get('/api/events', () => {
           return HttpResponse.json({ events: [recurringEvent] });
         }),
-        http.put('/api/events/:id', async ({ request }) => {
-          const body = (await request.json()) as Event;
+        http.put('/api/recurring-events/:id', async ({ request }) => {
+          const body = await request.json();
           capturedUpdateRequest = body;
-          return HttpResponse.json(body);
+          const updatedEvent = { ...recurringEvent, ...body };
+          return HttpResponse.json({ events: [updatedEvent] });
         })
       );
 
@@ -305,10 +306,12 @@ describe('반복 일정 수정', () => {
 
       await user.click(screen.getByTestId('event-submit-button'));
 
+      await screen.findByText('일정이 수정되었습니다.');
+
       expect(capturedUpdateRequest).not.toBeNull();
-      expect(capturedUpdateRequest!.repeat.type).toBe('daily');
-      expect(capturedUpdateRequest!.repeat.id).toBe('repeat-1');
-      expect(capturedUpdateRequest!.title).toBe('수정된 반복 회의');
+      expect(capturedUpdateRequest.repeat.type).toBe('daily');
+      expect(capturedUpdateRequest.repeat.id).toBe('repeat-1');
+      expect(capturedUpdateRequest.title).toBe('수정된 반복 회의');
     });
 
     it('전체 수정 후 Repeat 아이콘이 유지된다', async () => {
@@ -334,8 +337,8 @@ describe('반복 일정 수정', () => {
         http.get('/api/events', () => {
           return HttpResponse.json({ events: [recurringEvent] });
         }),
-        http.put('/api/events/:id', async () => {
-          return HttpResponse.json(updatedEvent);
+        http.put('/api/recurring-events/:id', async () => {
+          return HttpResponse.json({ events: [updatedEvent] });
         })
       );
 
@@ -440,6 +443,75 @@ describe('반복 일정 수정', () => {
       const eventList = within(screen.getByTestId('event-list'));
       const updatedTitles = eventList.getAllByText('수정된 반복 회의');
       expect(updatedTitles.length).toBeGreaterThan(1);
+    });
+  });
+
+  describe('일반 일정을 반복 일정으로 변경', () => {
+    it('개별 수정된 일반 일정을 다시 반복 일정으로 변경할 수 있다', async () => {
+      const normalEvent: Event = {
+        id: '1',
+        title: '일반 회의',
+        date: '2025-10-15',
+        startTime: '09:00',
+        endTime: '10:00',
+        description: '회의',
+        location: '회의실 A',
+        category: '업무',
+        repeat: { type: 'none', interval: 0 },
+        notificationTime: 10,
+      };
+
+      const mockEvents: Event[] = [normalEvent];
+
+      server.use(
+        http.get('/api/events', () => {
+          return HttpResponse.json({ events: mockEvents });
+        }),
+        http.delete('/api/events/:id', async ({ params }) => {
+          const index = mockEvents.findIndex((e) => e.id === params.id);
+          if (index > -1) {
+            mockEvents.splice(index, 1);
+          }
+          return new HttpResponse(null, { status: 204 });
+        }),
+        http.post('/api/events-list', async ({ request }) => {
+          const body = (await request.json()) as { events: any[] };
+          const newEvents = body.events.map((event, index) => ({
+            ...event,
+            id: String(mockEvents.length + index + 1),
+          }));
+          mockEvents.push(...newEvents);
+          return HttpResponse.json({ events: newEvents }, { status: 201 });
+        })
+      );
+
+      const { user } = setup();
+
+      await screen.findByText('일정 로딩 완료!');
+
+      await user.click(screen.getByLabelText('Edit event'));
+
+      await user.click(screen.getByLabelText('반복 일정'));
+
+      const repeatTypeCombobox = within(screen.getByLabelText('반복 유형')).getByRole('combobox');
+      await user.click(repeatTypeCombobox);
+      await user.click(screen.getByRole('option', { name: 'daily-option' }));
+
+      await user.type(screen.getByLabelText('반복 종료일'), '2025-10-20');
+
+      server.use(
+        http.get('/api/events', () => {
+          return HttpResponse.json({ events: mockEvents });
+        })
+      );
+
+      await user.click(screen.getByTestId('event-submit-button'));
+
+      await screen.findByText('반복 일정이 추가되었습니다.');
+
+      const eventList = within(screen.getByTestId('event-list'));
+      const events = await eventList.findAllByText('일반 회의');
+      expect(events.length).toBeGreaterThan(1);
     });
   });
 });

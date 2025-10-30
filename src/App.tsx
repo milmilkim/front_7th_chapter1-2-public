@@ -222,6 +222,18 @@ function App() {
       return;
     }
 
+    // 일반 일정을 반복 일정으로 변경하는 경우
+    if (!isEditingRepeatEvent && isRepeatEvent) {
+      // 기존 일정 삭제 후 새로운 반복 일정 시리즈 생성
+      if (editingEvent) {
+        await deleteEvent(editingEvent.id);
+      }
+      await saveEventList([eventData]);
+      resetForm();
+      setEditMode(null);
+      return;
+    }
+
     // 충돌 체크 (자기 자신은 제외)
     const otherEvents = events.filter((e) => e.id !== editingEvent?.id);
     const overlapping = findOverlappingEvents(eventData, otherEvents);
