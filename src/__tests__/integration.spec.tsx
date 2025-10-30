@@ -670,6 +670,82 @@ describe('반복 일정', () => {
     server.resetHandlers();
   });
 
+  it('반복 일정 수정 시 같은 시리즈와는 겹침 검사를 하지 않는다', async () => {
+    // Given: 반복 일정이 있는 상태
+    const mockEvents: Event[] = [
+      {
+        id: '1',
+        title: '반복 회의',
+        date: '2025-10-15',
+        startTime: '09:00',
+        endTime: '10:00',
+        description: '매일 회의',
+        location: '회의실 A',
+        category: '업무',
+        repeat: { type: 'daily', interval: 1, endDate: '2025-10-17', id: 'repeat-1' },
+        notificationTime: 10,
+      },
+      {
+        id: '2',
+        title: '반복 회의',
+        date: '2025-10-16',
+        startTime: '09:00',
+        endTime: '10:00',
+        description: '매일 회의',
+        location: '회의실 A',
+        category: '업무',
+        repeat: { type: 'daily', interval: 1, endDate: '2025-10-17', id: 'repeat-1' },
+        notificationTime: 10,
+      },
+      {
+        id: '3',
+        title: '반복 회의',
+        date: '2025-10-17',
+        startTime: '09:00',
+        endTime: '10:00',
+        description: '매일 회의',
+        location: '회의실 A',
+        category: '업무',
+        repeat: { type: 'daily', interval: 1, endDate: '2025-10-17', id: 'repeat-1' },
+        notificationTime: 10,
+      },
+    ];
+
+    server.use(
+      http.get('/api/events', () => {
+        return HttpResponse.json({ events: mockEvents });
+      }),
+      http.put('/api/events/:id', async ({ request }) => {
+        const body = (await request.json()) as Event;
+        return HttpResponse.json(body);
+      })
+    );
+
+    const { user } = setup(<App />);
+
+    await screen.findByText('일정 로딩 완료!');
+
+    // When: 반복 일정 중 하나를 수정
+    const editButtons = await screen.findAllByLabelText('Edit event');
+    await user.click(editButtons[0]); // 첫 번째 반복 일정 수정
+
+    // "예" 선택 (이 일정만 수정)
+    await user.click(screen.getByRole('button', { name: '예' }));
+
+    // 제목만 변경 (시간은 그대로)
+    await user.clear(screen.getByLabelText('제목'));
+    await user.type(screen.getByLabelText('제목'), '수정된 회의');
+
+    await user.click(screen.getByTestId('event-submit-button'));
+
+    // Then: 같은 시리즈의 다른 이벤트와 겹침 경고가 표시되지 않음
+    await act(() => Promise.resolve(null));
+    expect(screen.queryByText('일정 겹침 경고')).not.toBeInTheDocument();
+    expect(await screen.findByText('일정이 수정되었습니다.')).toBeInTheDocument();
+
+    server.resetHandlers();
+  });
+
   it('반복 일정 삭제 시 확인 다이얼로그가 표시된다', async () => {
     // Given: 반복 일정이 있는 상태
     const mockEvents: Event[] = [
