@@ -346,13 +346,13 @@ describe('반복 이벤트 (Recurring Events)', () => {
 
       const baseEvent: EventForm = {
         title: '윤년 기념일',
-        date: '2024-02-29',
+        date: '2020-02-29',
         startTime: '09:00',
         endTime: '10:00',
         description: '2월 29일 기념일',
         location: '회의실 A',
         category: '개인',
-        repeat: { type: 'yearly', interval: 1, endDate: '2028-03-01' },
+        repeat: { type: 'yearly', interval: 1, endDate: '2024-03-01' },
         notificationTime: 10,
       };
 
@@ -361,10 +361,10 @@ describe('반복 이벤트 (Recurring Events)', () => {
         await result.current.saveEventList([baseEvent]);
       });
 
-      // Then: 윤년에만 이벤트 생성 (2024, 2028)
+      // Then: 윤년에만 이벤트 생성 (2020, 2024)
       expect(result.current.events).toHaveLength(2);
-      expect(result.current.events[0].date).toBe('2024-02-29');
-      expect(result.current.events[1].date).toBe('2028-02-29');
+      expect(result.current.events[0].date).toBe('2020-02-29');
+      expect(result.current.events[1].date).toBe('2024-02-29');
 
       server.resetHandlers();
     });
