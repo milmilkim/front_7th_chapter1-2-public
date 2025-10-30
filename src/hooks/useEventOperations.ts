@@ -154,21 +154,17 @@ export const useEventOperations = (editing: boolean, onSave?: () => void) => {
 
   const deleteEventSeries = async (repeatId: string) => {
     try {
-      // repeat.id가 동일한 모든 이벤트 찾기
       const seriesMembers = events.filter(
         (e) => e.repeat.type !== 'none' && e.repeat.id === repeatId
       );
 
-      // 각 시리즈 멤버를 삭제
-      const deletePromises = seriesMembers.map(async (member) => {
-        const response = await fetch(`/api/events/${member.id}`, {
-          method: 'DELETE',
-        });
-
-        if (!response.ok) {
-          throw new Error(`Failed to delete event ${member.id}`);
-        }
-      });
+      const deletePromises = seriesMembers.map((member) =>
+        fetch(`/api/events/${member.id}`, { method: 'DELETE' }).then((response) => {
+          if (!response.ok) {
+            throw new Error(`Failed to delete event ${member.id}`);
+          }
+        })
+      );
 
       await Promise.all(deletePromises);
       await fetchEvents();

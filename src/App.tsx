@@ -123,12 +123,10 @@ function App() {
   const { enqueueSnackbar } = useSnackbar();
 
   const handleEditEvent = (event: Event) => {
-    // 반복 일정이면 수정 모드 선택 다이얼로그 표시
     if (event.repeat.type !== 'none') {
       setPendingEditEvent(event);
       setIsRecurringEditDialogOpen(true);
     } else {
-      // 일반 일정은 바로 수정
       editEvent(event);
     }
   };
@@ -137,29 +135,25 @@ function App() {
     setEditMode(mode);
     setIsRecurringEditDialogOpen(false);
 
-    if (pendingEditEvent) {
-      if (mode === 'single') {
-        // 단일 수정: repeat.type을 'none'으로 변경하여 editEvent 호출
-        const singleEvent: Event = {
-          ...pendingEditEvent,
-          repeat: { type: 'none', interval: 0 },
-        };
-        editEvent(singleEvent);
-      } else {
-        // 전체 수정: 반복 속성 유지하여 editEvent 호출
-        editEvent(pendingEditEvent);
-      }
-      setPendingEditEvent(null);
+    if (!pendingEditEvent) return;
+
+    if (mode === 'single') {
+      const singleEvent: Event = {
+        ...pendingEditEvent,
+        repeat: { type: 'none', interval: 0 },
+      };
+      editEvent(singleEvent);
+    } else {
+      editEvent(pendingEditEvent);
     }
+    setPendingEditEvent(null);
   };
 
   const handleDeleteEvent = (event: Event) => {
-    // 반복 일정이면 삭제 모드 선택 다이얼로그 표시
     if (event.repeat.type !== 'none') {
       setPendingDeleteEvent(event);
       setIsRecurringDeleteDialogOpen(true);
     } else {
-      // 일반 일정은 바로 삭제
       deleteEvent(event.id);
     }
   };
@@ -167,16 +161,14 @@ function App() {
   const handleRecurringDeleteModeSelect = (mode: 'single' | 'series') => {
     setIsRecurringDeleteDialogOpen(false);
 
-    if (pendingDeleteEvent) {
-      if (mode === 'single') {
-        // 단일 삭제
-        deleteEvent(pendingDeleteEvent.id);
-      } else {
-        // 시리즈 전체 삭제
-        deleteEventSeries(pendingDeleteEvent.repeat.id!);
-      }
-      setPendingDeleteEvent(null);
+    if (!pendingDeleteEvent) return;
+
+    if (mode === 'single') {
+      deleteEvent(pendingDeleteEvent.id);
+    } else {
+      deleteEventSeries(pendingDeleteEvent.repeat.id!);
     }
+    setPendingDeleteEvent(null);
   };
 
   const validateEventForm = (): boolean => {
@@ -765,7 +757,13 @@ function App() {
         </DialogActions>
       </Dialog>
 
-      <Dialog open={isRecurringEditDialogOpen} onClose={() => setIsRecurringEditDialogOpen(false)}>
+      <Dialog
+        open={isRecurringEditDialogOpen}
+        onClose={() => {
+          setIsRecurringEditDialogOpen(false);
+          setPendingEditEvent(null);
+        }}
+      >
         <DialogTitle>반복 일정 수정</DialogTitle>
         <DialogContent>
           <DialogContentText>해당 일정만 수정하시겠어요?</DialogContentText>
@@ -778,7 +776,10 @@ function App() {
 
       <Dialog
         open={isRecurringDeleteDialogOpen}
-        onClose={() => setIsRecurringDeleteDialogOpen(false)}
+        onClose={() => {
+          setIsRecurringDeleteDialogOpen(false);
+          setPendingDeleteEvent(null);
+        }}
       >
         <DialogTitle>반복 일정 삭제</DialogTitle>
         <DialogContent>
