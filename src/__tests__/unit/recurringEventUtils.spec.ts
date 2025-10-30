@@ -114,11 +114,11 @@ describe('generateRecurringEvents', () => {
     it('monthly 반복 타입으로 interval 1일 때 매월 같은 날짜에 이벤트가 생성된다', () => {
       // Given
       const baseEvent = createBaseEvent({
-        date: '2025-11-15',
+        date: '2025-09-15',
         repeat: {
           type: 'monthly',
           interval: 1,
-          endDate: '2026-02-15',
+          endDate: '2025-12-15',
         },
       });
 
@@ -127,20 +127,20 @@ describe('generateRecurringEvents', () => {
 
       // Then
       expect(events).toHaveLength(4);
-      expect(events[0].date).toBe('2025-11-15');
-      expect(events[1].date).toBe('2025-12-15');
-      expect(events[2].date).toBe('2026-01-15');
-      expect(events[3].date).toBe('2026-02-15');
+      expect(events[0].date).toBe('2025-09-15');
+      expect(events[1].date).toBe('2025-10-15');
+      expect(events[2].date).toBe('2025-11-15');
+      expect(events[3].date).toBe('2025-12-15');
     });
 
     it('monthly 반복 타입으로 interval 2일 때 2개월 간격으로 이벤트가 생성된다', () => {
       // Given
       const baseEvent = createBaseEvent({
-        date: '2025-11-15',
+        date: '2025-05-15',
         repeat: {
           type: 'monthly',
           interval: 2,
-          endDate: '2026-05-15',
+          endDate: '2025-11-15',
         },
       });
 
@@ -149,20 +149,20 @@ describe('generateRecurringEvents', () => {
 
       // Then
       expect(events).toHaveLength(4);
-      expect(events[0].date).toBe('2025-11-15');
-      expect(events[1].date).toBe('2026-01-15');
-      expect(events[2].date).toBe('2026-03-15');
-      expect(events[3].date).toBe('2026-05-15');
+      expect(events[0].date).toBe('2025-05-15');
+      expect(events[1].date).toBe('2025-07-15');
+      expect(events[2].date).toBe('2025-09-15');
+      expect(events[3].date).toBe('2025-11-15');
     });
 
     it('yearly 반복 타입으로 interval 1일 때 매년 같은 날짜에 이벤트가 생성된다', () => {
       // Given
       const baseEvent = createBaseEvent({
-        date: '2025-11-15',
+        date: '2022-11-15',
         repeat: {
           type: 'yearly',
           interval: 1,
-          endDate: '2028-11-15',
+          endDate: '2025-11-15',
         },
       });
 
@@ -171,20 +171,20 @@ describe('generateRecurringEvents', () => {
 
       // Then
       expect(events).toHaveLength(4);
-      expect(events[0].date).toBe('2025-11-15');
-      expect(events[1].date).toBe('2026-11-15');
-      expect(events[2].date).toBe('2027-11-15');
-      expect(events[3].date).toBe('2028-11-15');
+      expect(events[0].date).toBe('2022-11-15');
+      expect(events[1].date).toBe('2023-11-15');
+      expect(events[2].date).toBe('2024-11-15');
+      expect(events[3].date).toBe('2025-11-15');
     });
 
     it('yearly 반복 타입으로 interval 2일 때 2년 간격으로 이벤트가 생성된다', () => {
       // Given
       const baseEvent = createBaseEvent({
-        date: '2025-11-15',
+        date: '2019-11-15',
         repeat: {
           type: 'yearly',
           interval: 2,
-          endDate: '2031-11-15',
+          endDate: '2025-11-15',
         },
       });
 
@@ -193,10 +193,10 @@ describe('generateRecurringEvents', () => {
 
       // Then
       expect(events).toHaveLength(4);
-      expect(events[0].date).toBe('2025-11-15');
-      expect(events[1].date).toBe('2027-11-15');
-      expect(events[2].date).toBe('2029-11-15');
-      expect(events[3].date).toBe('2031-11-15');
+      expect(events[0].date).toBe('2019-11-15');
+      expect(events[1].date).toBe('2021-11-15');
+      expect(events[2].date).toBe('2023-11-15');
+      expect(events[3].date).toBe('2025-11-15');
     });
 
     it('생성된 모든 이벤트는 고유한 id를 가진다', () => {
@@ -357,11 +357,11 @@ describe('generateRecurringEvents', () => {
     it('yearly 2월 29일 반복 시 윤년이 아닌 해는 건너뛴다', () => {
       // Given
       const baseEvent = createBaseEvent({
-        date: '2024-02-29',
+        date: '2020-02-29',
         repeat: {
           type: 'yearly',
           interval: 1,
-          endDate: '2028-03-01',
+          endDate: '2024-03-01',
         },
       });
 
@@ -370,8 +370,50 @@ describe('generateRecurringEvents', () => {
 
       // Then
       expect(events).toHaveLength(2);
-      expect(events[0].date).toBe('2024-02-29');
-      expect(events[1].date).toBe('2028-02-29');
+      expect(events[0].date).toBe('2020-02-29');
+      expect(events[1].date).toBe('2024-02-29');
+    });
+
+    it('endDate가 2025-12-31을 초과하면 2025-12-31로 제한된다', () => {
+      // Given
+      const baseEvent = createBaseEvent({
+        date: '2025-11-01',
+        repeat: {
+          type: 'monthly',
+          interval: 1,
+          endDate: '2026-03-01',
+        },
+      });
+
+      // When
+      const events = generateRecurringEvents(baseEvent);
+
+      // Then
+      expect(events).toHaveLength(2);
+      expect(events[0].date).toBe('2025-11-01');
+      expect(events[1].date).toBe('2025-12-01');
+      expect(events[events.length - 1].date).not.toContain('2026');
+    });
+
+    it('endDate가 정확히 2025-12-31이면 정상적으로 동작한다', () => {
+      // Given
+      const baseEvent = createBaseEvent({
+        date: '2025-10-15',
+        repeat: {
+          type: 'monthly',
+          interval: 1,
+          endDate: '2025-12-31',
+        },
+      });
+
+      // When
+      const events = generateRecurringEvents(baseEvent);
+
+      // Then
+      expect(events).toHaveLength(3);
+      expect(events[0].date).toBe('2025-10-15');
+      expect(events[1].date).toBe('2025-11-15');
+      expect(events[2].date).toBe('2025-12-15');
     });
   });
 });
@@ -481,24 +523,24 @@ describe('calculateNextDate', () => {
 
     it('연도 경계를 넘어갈 때 올바른 날짜를 반환한다', () => {
       // Given
-      const currentDate = '2025-12-31';
+      const currentDate = '2024-12-31';
 
       // When
       const nextDate = calculateNextDate(currentDate, 'daily', 1);
 
       // Then
-      expect(nextDate).toBe('2026-01-01');
+      expect(nextDate).toBe('2025-01-01');
     });
 
     it('monthly에서 존재하지 않는 날짜를 반환할 수 있다', () => {
       // Given
-      const currentDate = '2025-01-31';
+      const currentDate = '2024-01-31';
 
       // When
       const nextDate = calculateNextDate(currentDate, 'monthly', 1);
 
       // Then
-      expect(nextDate).toBe('2025-02-31');
+      expect(nextDate).toBe('2024-02-31');
     });
   });
 });
@@ -559,8 +601,8 @@ describe('isValidOccurrenceDate', () => {
 
     it('31일 원본이 2월 31일 후보에 대해 false를 반환한다', () => {
       // Given
-      const originalDate = '2025-01-31';
-      const candidateDate = '2025-02-31';
+      const originalDate = '2024-01-31';
+      const candidateDate = '2024-02-31';
 
       // When
       const isValid = isValidOccurrenceDate(originalDate, candidateDate, 'monthly');
@@ -571,8 +613,8 @@ describe('isValidOccurrenceDate', () => {
 
     it('31일 원본이 1월 31일 후보에 대해 true를 반환한다', () => {
       // Given
-      const originalDate = '2025-01-31';
-      const candidateDate = '2025-03-31';
+      const originalDate = '2024-01-31';
+      const candidateDate = '2024-03-31';
 
       // When
       const isValid = isValidOccurrenceDate(originalDate, candidateDate, 'monthly');
@@ -633,8 +675,8 @@ describe('isValidOccurrenceDate', () => {
 
     it('2월 29일 원본이 윤년 2월 29일 후보에 대해 true를 반환한다', () => {
       // Given
-      const originalDate = '2024-02-29';
-      const candidateDate = '2028-02-29';
+      const originalDate = '2020-02-29';
+      const candidateDate = '2024-02-29';
 
       // When
       const isValid = isValidOccurrenceDate(originalDate, candidateDate, 'yearly');
@@ -645,8 +687,8 @@ describe('isValidOccurrenceDate', () => {
 
     it('2월 29일 원본이 평년 2월 29일 후보에 대해 false를 반환한다', () => {
       // Given
-      const originalDate = '2024-02-29';
-      const candidateDate = '2025-02-29';
+      const originalDate = '2020-02-29';
+      const candidateDate = '2021-02-29';
 
       // When
       const isValid = isValidOccurrenceDate(originalDate, candidateDate, 'yearly');
