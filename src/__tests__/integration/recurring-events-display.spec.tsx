@@ -4,7 +4,7 @@ import { render, screen, within } from '@testing-library/react';
 import { userEvent } from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
 import { SnackbarProvider } from 'notistack';
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect } from 'vitest';
 
 import App from '../../App';
 import { server } from '../../setupTests';
@@ -63,7 +63,7 @@ describe('반복 일정 표시', () => {
       const eventBox = within(monthView).getByText('일간 회의').closest('div');
 
       expect(eventBox).toBeInTheDocument();
-      
+
       // Repeat 아이콘이 표시되는지 확인 (MUI Repeat icon은 data-testid="RepeatIcon"으로 표시됨)
       const repeatIcon = within(eventBox!).getByTestId('RepeatIcon');
       expect(repeatIcon).toBeInTheDocument();
@@ -100,7 +100,7 @@ describe('반복 일정 표시', () => {
       const eventBox = within(monthView).getByText('일반 회의').closest('div');
 
       expect(eventBox).toBeInTheDocument();
-      
+
       // Repeat 아이콘이 없는지 확인
       const repeatIcon = within(eventBox!).queryByTestId('RepeatIcon');
       expect(repeatIcon).not.toBeInTheDocument();
@@ -140,7 +140,7 @@ describe('반복 일정 표시', () => {
       const eventBox = within(weekView).getByText('주간 회의').closest('div');
 
       expect(eventBox).toBeInTheDocument();
-      
+
       // Repeat 아이콘이 표시되는지 확인
       const repeatIcon = within(eventBox!).getByTestId('RepeatIcon');
       expect(repeatIcon).toBeInTheDocument();
@@ -177,7 +177,7 @@ describe('반복 일정 표시', () => {
       const eventBox = within(weekView).getByText('일반 회의').closest('div');
 
       expect(eventBox).toBeInTheDocument();
-      
+
       // Repeat 아이콘이 없는지 확인
       const repeatIcon = within(eventBox!).queryByTestId('RepeatIcon');
       expect(repeatIcon).not.toBeInTheDocument();
@@ -211,7 +211,7 @@ describe('반복 일정 표시', () => {
 
       const monthView = screen.getByTestId('month-view');
       const eventBox = within(monthView).getByText('일간 스탠드업').closest('div');
-      
+
       const repeatIcon = within(eventBox!).getByTestId('RepeatIcon');
       expect(repeatIcon).toBeInTheDocument();
     });
@@ -242,7 +242,7 @@ describe('반복 일정 표시', () => {
 
       const monthView = screen.getByTestId('month-view');
       const eventBox = within(monthView).getByText('주간 리뷰').closest('div');
-      
+
       const repeatIcon = within(eventBox!).getByTestId('RepeatIcon');
       expect(repeatIcon).toBeInTheDocument();
     });
@@ -273,7 +273,7 @@ describe('반복 일정 표시', () => {
 
       const monthView = screen.getByTestId('month-view');
       const eventBox = within(monthView).getByText('월간 보고').closest('div');
-      
+
       const repeatIcon = within(eventBox!).getByTestId('RepeatIcon');
       expect(repeatIcon).toBeInTheDocument();
     });
@@ -304,10 +304,9 @@ describe('반복 일정 표시', () => {
 
       const monthView = screen.getByTestId('month-view');
       const eventBox = within(monthView).getByText('생일 파티').closest('div');
-      
+
       const repeatIcon = within(eventBox!).getByTestId('RepeatIcon');
       expect(repeatIcon).toBeInTheDocument();
     });
   });
 });
-
