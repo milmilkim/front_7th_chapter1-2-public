@@ -152,6 +152,33 @@ export const useEventOperations = (editing: boolean, onSave?: () => void) => {
     }
   };
 
+  const deleteEventSeries = async (repeatId: string) => {
+    try {
+      // repeat.id가 동일한 모든 이벤트 찾기
+      const seriesMembers = events.filter(
+        (e) => e.repeat.type !== 'none' && e.repeat.id === repeatId
+      );
+
+      // 각 시리즈 멤버를 삭제
+      const deletePromises = seriesMembers.map(async (member) => {
+        const response = await fetch(`/api/events/${member.id}`, {
+          method: 'DELETE',
+        });
+
+        if (!response.ok) {
+          throw new Error(`Failed to delete event ${member.id}`);
+        }
+      });
+
+      await Promise.all(deletePromises);
+      await fetchEvents();
+      enqueueSnackbar('일정이 삭제되었습니다.', { variant: 'info' });
+    } catch (error) {
+      console.error('Error deleting event series:', error);
+      enqueueSnackbar('일정 삭제 실패', { variant: 'error' });
+    }
+  };
+
   async function init() {
     await fetchEvents();
     enqueueSnackbar('일정 로딩 완료!', { variant: 'info' });
@@ -162,5 +189,13 @@ export const useEventOperations = (editing: boolean, onSave?: () => void) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  return { events, fetchEvents, saveEvent, deleteEvent, saveEventList, saveEventSeries };
+  return {
+    events,
+    fetchEvents,
+    saveEvent,
+    deleteEvent,
+    saveEventList,
+    saveEventSeries,
+    deleteEventSeries,
+  };
 };
