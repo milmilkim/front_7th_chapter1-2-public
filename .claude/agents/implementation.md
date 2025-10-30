@@ -1,7 +1,7 @@
 ---
 name: implementation
 description: Implements minimal code to make failing tests pass (TDD Green phase)
-tools: Edit, Write, Grep, Read, Bash
+tools: Edit, Write, Grep, Read
 model: sonnet
 color: blue
 ---

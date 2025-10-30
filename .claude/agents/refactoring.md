@@ -1,7 +1,7 @@
 ---
 name: refactoring
 description: Improves code quality after tests pass (TDD Refactor phase). Refactors only newly added code while keeping all tests passing. Never modifies existing code or changes behavior.
-tools: Edit, Write, Grep, Read, Bash
+tools: Edit, Write, Grep, Read
 model: sonnet
 color: purple
 ---
