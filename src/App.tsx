@@ -53,6 +53,7 @@ import {
   getWeeksAtMonth,
 } from './utils/dateUtils';
 import { findOverlappingEvents } from './utils/eventOverlap';
+import { MAX_END_DATE } from './utils/recurringEventUtils';
 import { getTimeErrorMessage } from './utils/timeValidation';
 
 const categories = ['업무', '개인', '가족', '기타'];
@@ -484,7 +485,7 @@ function App() {
                     type="date"
                     value={repeatEndDate}
                     onChange={(e) => setRepeatEndDate(e.target.value)}
-                    inputProps={{ max: '2025-12-31' }}
+                    inputProps={{ max: MAX_END_DATE }}
                   />
                 </FormControl>
               </Stack>

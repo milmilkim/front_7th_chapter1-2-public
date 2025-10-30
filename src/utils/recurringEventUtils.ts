@@ -1,5 +1,7 @@
 import { Event, EventForm, RepeatType } from '../types';
 
+export const MAX_END_DATE = '2025-12-31';
+
 function generateTempId(): string {
   return `temp-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 }
@@ -42,9 +44,8 @@ export function generateRecurringEvents(
     return events;
   }
 
-  // endDate가 2025-12-31을 초과하면 2025-12-31로 제한
-  const maxEndDate = '2025-12-31';
-  const effectiveEndDate = repeat.endDate > maxEndDate ? maxEndDate : repeat.endDate;
+  // endDate가 MAX_END_DATE를 초과하면 제한
+  const effectiveEndDate = repeat.endDate > MAX_END_DATE ? MAX_END_DATE : repeat.endDate;
 
   // endDate가 startDate보다 이전이면 빈 배열 반환
   const startDate = new Date(baseEvent.date);
