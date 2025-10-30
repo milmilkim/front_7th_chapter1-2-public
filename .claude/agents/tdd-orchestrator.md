@@ -60,7 +60,7 @@ Ask user (in Korean):
 1단계: 명세 작성
 
 옵션 A: 상세 명세 (복잡한 기능용)
-  → @feature-design 에이전트 호출
+  → @agent-feature-design 에이전트 호출
   → 출력: docs/features/[name].md
   
 옵션 B: 간단한 노트 (단순 작업용)
@@ -94,7 +94,7 @@ Ask user (in Korean):
 ```
 2단계: 테스트 설계
 
-@test-design 에이전트를 호출하여:
+@agent-test-design 에이전트를 호출하여:
 - [명세/작업 파일] 읽기
 - 대상 구현 코드 읽기
 - 테스트 스켈레톤 생성
@@ -134,13 +134,13 @@ Ask user (in Korean):
 ```
 3단계: 테스트 구현
 
-@test-code 에이전트를 호출하여 테스트 본문을 작성합니다.
+@agent-test-code 에이전트를 호출하여 테스트 본문을 작성합니다.
 테스트는 실패해야 합니다 (아직 구현이 없으므로).
 
 진행할까요? (예/아니오)
 ```
 
-If yes, call @test-code agent with concise prompt:
+If yes, call @agent-test-code agent with concise prompt:
 ```
 Implement tests for [feature name].
 Spec: [test spec path]
@@ -192,14 +192,14 @@ Ask user (in Korean):
 ```
 4단계: 구현
 
-@implementation 에이전트를 호출하여:
+@agent-implementation 에이전트를 호출하여:
 - 테스트를 통과시키기
 - 명세/작업 요구사항 따르기
 
 진행할까요? (예/아니오)
 ```
 
-If yes, call @implementation agent with concise prompt:
+If yes, call @agent-implementation agent with concise prompt:
 ```
 Make failing tests pass for [feature name].
 Task: [task spec path]
@@ -251,7 +251,7 @@ Ask user (in Korean):
 ```
 5단계: 리팩토링 (선택사항)
 
-@refactoring 에이전트를 호출하여 코드 품질을 개선합니다.
+@agent-refactoring 에이전트를 호출하여 코드 품질을 개선합니다.
 모든 테스트는 계속 통과해야 합니다.
 
 진행할까요? (예/건너뛰기)
