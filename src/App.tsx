@@ -83,7 +83,6 @@ function App() {
     category,
     setCategory,
     isRepeating,
-    setIsRepeating,
     repeatType,
     setRepeatType,
     repeatInterval,
@@ -98,6 +97,7 @@ function App() {
     setEditingEvent,
     handleStartTimeChange,
     handleEndTimeChange,
+    handleIsRepeatingChange,
     resetForm,
     editEvent,
   } = useEventForm();
@@ -179,6 +179,11 @@ function App() {
 
     if (startTimeError || endTimeError) {
       enqueueSnackbar('시간 설정을 확인해주세요.', { variant: 'error' });
+      return false;
+    }
+
+    if (isRepeating && repeatType === 'none') {
+      enqueueSnackbar('반복 일정 유형을 선택해주세요.', { variant: 'error' });
       return false;
     }
 
@@ -548,7 +553,7 @@ function App() {
               control={
                 <Checkbox
                   checked={isRepeating}
-                  onChange={(e) => setIsRepeating(e.target.checked)}
+                  onChange={(e) => handleIsRepeatingChange(e.target.checked)}
                 />
               }
               label="반복 일정"
