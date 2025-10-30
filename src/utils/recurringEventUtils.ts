@@ -84,12 +84,15 @@ export function calculateNextDate(
   repeatType: RepeatType,
   interval: number
 ): string {
+  // interval이 0 이하면 기본값 1 사용
+  const validInterval = interval > 0 ? interval : 1;
+
   const [year, month, day] = currentDate.split('-').map(Number);
 
   switch (repeatType) {
     case 'daily': {
       const date = new Date(year, month - 1, day);
-      date.setDate(date.getDate() + interval);
+      date.setDate(date.getDate() + validInterval);
       const newYear = date.getFullYear();
       const newMonth = String(date.getMonth() + 1).padStart(2, '0');
       const newDay = String(date.getDate()).padStart(2, '0');
@@ -97,7 +100,7 @@ export function calculateNextDate(
     }
     case 'weekly': {
       const date = new Date(year, month - 1, day);
-      date.setDate(date.getDate() + interval * 7);
+      date.setDate(date.getDate() + validInterval * 7);
       const newYear = date.getFullYear();
       const newMonth = String(date.getMonth() + 1).padStart(2, '0');
       const newDay = String(date.getDate()).padStart(2, '0');
@@ -106,7 +109,7 @@ export function calculateNextDate(
     case 'monthly': {
       // 월만 증가시키고 일은 그대로 유지 (존재하지 않는 날짜도 포함)
       let newYear = year;
-      let newMonth = month + interval;
+      let newMonth = month + validInterval;
 
       // 월이 12를 넘으면 연도 조정
       while (newMonth > 12) {
@@ -120,7 +123,7 @@ export function calculateNextDate(
     }
     case 'yearly': {
       // 연도만 증가시키고 월/일은 그대로 유지 (존재하지 않는 날짜도 포함)
-      const newYear = year + interval;
+      const newYear = year + validInterval;
       const formattedMonth = String(month).padStart(2, '0');
       const formattedDay = String(day).padStart(2, '0');
       return `${newYear}-${formattedMonth}-${formattedDay}`;
