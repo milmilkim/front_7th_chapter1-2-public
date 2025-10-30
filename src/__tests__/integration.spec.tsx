@@ -372,6 +372,7 @@ describe('반복 일정', () => {
     await user.type(screen.getByLabelText('위치'), '회의실 A');
 
     // 반복 설정
+    await user.click(screen.getByLabelText('반복 일정'));
     const repeatTypeCombobox = within(screen.getByLabelText('반복 유형')).getByRole('combobox');
     await user.click(repeatTypeCombobox);
     await user.click(screen.getByRole('option', { name: 'daily-option' }));
@@ -416,6 +417,7 @@ describe('반복 일정', () => {
     await user.type(screen.getByLabelText('설명'), '주간 회의');
     await user.type(screen.getByLabelText('위치'), '회의실 A');
 
+    await user.click(screen.getByLabelText('반복 일정'));
     await user.click(screen.getByLabelText('반복 유형'));
     const repeatTypeCombobox = within(screen.getByLabelText('반복 유형')).getByRole('combobox');
     await user.click(repeatTypeCombobox);
@@ -465,6 +467,7 @@ describe('반복 일정', () => {
     await user.type(screen.getByLabelText('설명'), '매월 31일 회의');
     await user.type(screen.getByLabelText('위치'), '회의실 A');
 
+    await user.click(screen.getByLabelText('반복 일정'));
     await user.click(screen.getByLabelText('반복 유형'));
     const repeatTypeCombobox = within(screen.getByLabelText('반복 유형')).getByRole('combobox');
     await user.click(repeatTypeCombobox);
@@ -531,6 +534,7 @@ describe('반복 일정', () => {
     await user.type(screen.getByLabelText('설명'), '2월 29일 기념일');
     await user.type(screen.getByLabelText('위치'), '회의실 A');
 
+    await user.click(screen.getByLabelText('반복 일정'));
     await user.click(screen.getByLabelText('반복 유형'));
     const repeatTypeCombobox = within(screen.getByLabelText('반복 유형')).getByRole('combobox');
     await user.click(repeatTypeCombobox);
@@ -590,7 +594,7 @@ describe('반복 일정', () => {
     await user.type(screen.getByLabelText('설명'), '매일 회의');
     await user.type(screen.getByLabelText('위치'), '회의실 A');
 
-    // 반복 유형 선택 (다른 테스트와 동일하게)
+    await user.click(screen.getByLabelText('반복 일정'));
     const repeatTypeCombobox = within(screen.getByLabelText('반복 유형')).getByRole('combobox');
     await user.click(repeatTypeCombobox);
     await user.click(screen.getByRole('option', { name: 'daily-option' }));
@@ -648,6 +652,7 @@ describe('반복 일정', () => {
     await user.type(screen.getByLabelText('설명'), '기존 회의와 겹침');
     await user.type(screen.getByLabelText('위치'), '회의실 B');
 
+    await user.click(screen.getByLabelText('반복 일정'));
     await user.click(screen.getByLabelText('반복 유형'));
     const repeatTypeCombobox = within(screen.getByLabelText('반복 유형')).getByRole('combobox');
     await user.click(repeatTypeCombobox);
