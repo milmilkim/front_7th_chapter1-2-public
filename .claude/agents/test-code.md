@@ -249,3 +249,71 @@ Project Setup:
 - Use vi.fn/vi.mock for mocks
 - TypeScript strict mode
 - Korean test descriptions
+
+Critical Integration Test Lessons:
+
+Test UI Behavior, Not Internal State:
+- BAD: Verify mockEvents array directly
+  ```typescript
+  expect(mockEvents.length).toBe(3)
+  expect(mockEvents.some(e => e.date === '2025-01-31')).toBe(true)
+  ```
+  Why: Integration tests should verify what users see in the UI
+  
+- GOOD: Find events on screen and verify
+  ```typescript
+  const eventList = within(screen.getByTestId('event-list'))
+  expect(await eventList.findByText('End of Month Meeting')).toBeInTheDocument()
+  ```
+
+View Navigation for Multi-Period Tests:
+- BAD: Check all months events at once in monthly view
+  ```typescript
+  expect(await eventList.findAllByText('End of Month Meeting')).toHaveLength(3)
+  ```
+  Why: Monthly view only shows current month, other month events are not visible
+  
+- GOOD: Navigate months using Next button and verify each month
+  ```typescript
+  // Check January
+  expect(await eventList.findByText('End of Month Meeting')).toBeInTheDocument()
+  
+  // Navigate to February
+  await user.click(screen.getByLabelText('Next'))
+  expect(eventList.queryByText('End of Month Meeting')).not.toBeInTheDocument()
+  
+  // Navigate to March
+  await user.click(screen.getByLabelText('Next'))
+  expect(await eventList.findByText('End of Month Meeting')).toBeInTheDocument()
+  ```
+
+Use Test Helpers, Not Direct Server Setup:
+- BAD: Use server.use() directly inside test
+  ```typescript
+  server.use(
+    http.get('/api/events', () => HttpResponse.json({ events: [] })),
+    http.post('/api/events-list', async ({ request }) => { ... })
+  )
+  ```
+  Why: Duplicates boilerplate code, inconsistent pattern with other tests
+  
+- GOOD: Use helper functions from src/__mocks__/handlersUtils.ts
+  ```typescript
+  setupMockHandlerCreation()  // Mock POST /api/events
+  setupMockHandlerUpdating()  // Mock PUT /api/events/:id
+  setupMockHandlerDeletion()  // Mock DELETE /api/events/:id
+  ```
+
+Test Timeout for Long Tests:
+- Set timeout for tests requiring many clicks (36+ clicks)
+  ```typescript
+  it('yearly Feb 29th recurring event', async () => {
+    // ... many Next button clicks ...
+  }, 10000)  // 10 second timeout
+  ```
+
+Integration Test Complexity Guidelines:
+- Integration tests are harder to write than unit tests
+- Must consider UI rendering, view filtering, and state changes together
+- Review view context thoroughly during test design phase
+- Structure button clicks and form inputs following actual user scenario order

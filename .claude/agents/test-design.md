@@ -173,3 +173,24 @@ Verification Checklist:
 - [ ] Test descriptions in Korean
 - [ ] Tests match acceptance criteria in spec
 
+Common Pitfalls and Lessons Learned:
+
+Edge Case Test Design:
+- BAD: Design monthly 31st repeat test starting from January 1st
+  Why: Day 1 exists in all months, cannot verify months without 31st day
+- GOOD: Start from January 31st to verify February (no 31st), March (has 31st)
+
+- BAD: Design yearly leap year test with same date (2024-02-29 to 2024-02-29)
+  Why: Only creates single event, cannot compare leap year vs regular year
+- GOOD: Design 2024-02-29 to 2027-02-28 to verify leap year (2024) and regular years (2025,2027)
+
+View Context Consideration:
+- Monthly view shows current month only, weekly view shows current week only
+- For recurring events spanning multiple months, note that month navigation is required
+- Include hints in test description like "navigate through months using Next button"
+
+Test Data Selection:
+- Design edge cases with data that can actually be verified
+- Set ranges that include boundary values (31st day, Feb 29th)
+- Include sufficient verification points (minimum 2-3 months/years)
+
