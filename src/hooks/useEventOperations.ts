@@ -106,43 +106,30 @@ export const useEventOperations = (editing: boolean, onSave?: () => void) => {
 
   const saveEventSeries = async (eventData: Event) => {
     try {
-      // repeat.id가 동일한 모든 이벤트 찾기
-      const seriesMembers = events.filter(
-        (e) => e.repeat.type !== 'none' && e.repeat.id === eventData.repeat.id
-      );
-
-      if (seriesMembers.length === 0) {
-        // 시리즈 멤버가 없으면 일반 저장
+      if (!eventData.repeat.id) {
         await saveEvent(eventData);
         return;
       }
 
-      // 각 시리즈 멤버를 업데이트 (날짜/시간은 유지)
-      const updatePromises = seriesMembers.map(async (member) => {
-        const updatedMember: Event = {
-          ...member,
-          title: eventData.title,
-          description: eventData.description,
-          location: eventData.location,
-          category: eventData.category,
-          notificationTime: eventData.notificationTime,
-          repeat: eventData.repeat, // 반복 속성 유지
-        };
+      const updateData = {
+        title: eventData.title,
+        description: eventData.description,
+        location: eventData.location,
+        category: eventData.category,
+        notificationTime: eventData.notificationTime,
+        repeat: eventData.repeat,
+      };
 
-        const response = await fetch(`/api/events/${member.id}`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(updatedMember),
-        });
-
-        if (!response.ok) {
-          throw new Error(`Failed to update event ${member.id}`);
-        }
-
-        return response.json();
+      const response = await fetch(`/api/recurring-events/${eventData.repeat.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updateData),
       });
 
-      await Promise.all(updatePromises);
+      if (!response.ok) {
+        throw new Error('Failed to update recurring events');
+      }
+
       await fetchEvents();
       onSave?.();
       enqueueSnackbar('일정이 수정되었습니다.', { variant: 'success' });
@@ -154,19 +141,14 @@ export const useEventOperations = (editing: boolean, onSave?: () => void) => {
 
   const deleteEventSeries = async (repeatId: string) => {
     try {
-      const seriesMembers = events.filter(
-        (e) => e.repeat.type !== 'none' && e.repeat.id === repeatId
-      );
+      const response = await fetch(`/api/recurring-events/${repeatId}`, {
+        method: 'DELETE',
+      });
 
-      const deletePromises = seriesMembers.map((member) =>
-        fetch(`/api/events/${member.id}`, { method: 'DELETE' }).then((response) => {
-          if (!response.ok) {
-            throw new Error(`Failed to delete event ${member.id}`);
-          }
-        })
-      );
+      if (!response.ok) {
+        throw new Error('Failed to delete recurring events');
+      }
 
-      await Promise.all(deletePromises);
       await fetchEvents();
       enqueueSnackbar('일정이 삭제되었습니다.', { variant: 'info' });
     } catch (error) {

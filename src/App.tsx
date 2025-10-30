@@ -204,8 +204,19 @@ function App() {
   });
 
   const handleUpdateEvent = async (eventData: Event | EventForm) => {
-    if (editMode === 'series' && eventData.repeat.type !== 'none') {
+    const isRepeatEvent = eventData.repeat.type !== 'none';
+
+    if (editMode === 'series' && isRepeatEvent) {
       await saveEventSeries(eventData as Event);
+      resetForm();
+      setEditMode(null);
+      return;
+    }
+
+    // 반복 일정을 유지하면서 수정하는 경우 (단, 일반 일정으로 변환하는 경우 제외) 겹침 검사 건너뛰기
+    const isEditingRepeatEvent = editingEvent?.repeat.type !== 'none';
+    if (editMode !== 'single' && isEditingRepeatEvent && isRepeatEvent) {
+      await saveEvent(eventData);
       resetForm();
       setEditMode(null);
       return;

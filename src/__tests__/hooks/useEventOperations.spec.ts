@@ -583,12 +583,7 @@ describe('반복 이벤트 (Recurring Events)', () => {
         http.get('/api/events', () => {
           return HttpResponse.json({ events: recurringEvents });
         }),
-        http.delete('/api/events/:id', ({ params }) => {
-          const id = params.id as string;
-          const index = recurringEvents.findIndex((e) => e.id === id);
-          if (index !== -1) {
-            recurringEvents.splice(index, 1);
-          }
+        http.delete('/api/recurring-events/:repeatId', () => {
           return new HttpResponse(null, { status: 204 });
         })
       );
@@ -678,12 +673,7 @@ describe('반복 이벤트 (Recurring Events)', () => {
         http.get('/api/events', () => {
           return HttpResponse.json({ events: recurringEvents });
         }),
-        http.delete('/api/events/:id', ({ params }) => {
-          const id = params.id as string;
-          const index = recurringEvents.findIndex((e) => e.id === id);
-          if (index !== -1) {
-            recurringEvents.splice(index, 1);
-          }
+        http.delete('/api/recurring-events/:repeatId', () => {
           return new HttpResponse(null, { status: 204 });
         })
       );
@@ -748,7 +738,7 @@ describe('반복 이벤트 (Recurring Events)', () => {
         http.get('/api/events', () => {
           return HttpResponse.json({ events: recurringEvents });
         }),
-        http.delete('/api/events/:id', () => {
+        http.delete('/api/recurring-events/:repeatId', () => {
           return new HttpResponse(null, { status: 204 });
         })
       );
@@ -802,7 +792,7 @@ describe('반복 이벤트 (Recurring Events)', () => {
         http.get('/api/events', () => {
           return HttpResponse.json({ events: recurringEvents });
         }),
-        http.delete('/api/events/:id', () => {
+        http.delete('/api/recurring-events/:repeatId', () => {
           return new HttpResponse(null, { status: 500 });
         })
       );
@@ -1050,20 +1040,15 @@ describe('반복 이벤트 (Recurring Events)', () => {
         },
       ];
 
-      let updateCallCount = 0;
+      let updateCalled = false;
 
       server.use(
         http.get('/api/events', () => {
           return HttpResponse.json({ events: recurringEvents });
         }),
-        http.put('/api/events/:id', async ({ params }) => {
-          updateCallCount++;
-          const id = params.id as string;
-          const event = recurringEvents.find((e) => e.id === id)!;
-          return HttpResponse.json({
-            ...event,
-            title: '수정된 반복 회의',
-          });
+        http.put('/api/recurring-events/:repeatId', async () => {
+          updateCalled = true;
+          return HttpResponse.json([]);
         })
       );
 
@@ -1086,24 +1071,16 @@ describe('반복 이벤트 (Recurring Events)', () => {
       );
 
       await act(async () => {
-        // saveEventSeries 메서드가 구현될 예정 - 현재는 saveEvent로 시리즈 업데이트 로직 테스트
-        // 구현 시 repeat.id가 동일한 모든 이벤트를 찾아 업데이트해야 함
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const hook = result.current as any;
         if (hook.saveEventSeries) {
           await hook.saveEventSeries(updatedEvent);
-        } else {
-          // 임시: 개별 업데이트 (구현 후 제거될 코드)
-          await result.current.saveEvent(updatedEvent);
         }
       });
 
-      // 이 테스트는 구현 단계에서 saveEventSeries 메서드 추가 후 통과해야 함
-      if (updateCallCount > 1) {
-        expect(updateCallCount).toBeGreaterThan(1);
-        expect(result.current.events.filter((e) => e.title === '수정된 반복 회의')).toHaveLength(2);
-        expect(result.current.events.find((e) => e.id === '3')?.title).toBe('다른 반복 회의');
-      }
+      expect(updateCalled).toBe(true);
+      expect(result.current.events.filter((e) => e.title === '수정된 반복 회의')).toHaveLength(2);
+      expect(result.current.events.find((e) => e.id === '3')?.title).toBe('다른 반복 회의');
     });
 
     it('일반 일정 수정 시 기존 동작을 유지한다', async () => {

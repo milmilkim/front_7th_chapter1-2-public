@@ -24,32 +24,15 @@ export function generateRecurringEvents(
     ];
   }
 
-  // endDate가 없으면 maxOccurrences까지 생성
-  if (!repeat.endDate) {
-    const repeatId = generateTempId();
-    const events: Event[] = [];
-    let currentDate = baseEvent.date;
-
-    for (let i = 0; i < maxOccurrences; i++) {
-      events.push({
-        ...baseEvent,
-        id: generateTempId(),
-        date: currentDate,
-        repeat: { ...repeat, id: repeatId },
-      });
-
-      currentDate = calculateNextDate(currentDate, repeat.type, repeat.interval);
-    }
-
-    return events;
-  }
+  // endDate가 없으면 MAX_END_DATE를 기본값으로 사용
+  const effectiveEndDate = repeat.endDate || MAX_END_DATE;
 
   // endDate가 MAX_END_DATE를 초과하면 제한
-  const effectiveEndDate = repeat.endDate > MAX_END_DATE ? MAX_END_DATE : repeat.endDate;
+  const finalEndDate = effectiveEndDate > MAX_END_DATE ? MAX_END_DATE : effectiveEndDate;
 
   // endDate가 startDate보다 이전이면 빈 배열 반환
   const startDate = new Date(baseEvent.date);
-  const endDate = new Date(effectiveEndDate);
+  const endDate = new Date(finalEndDate);
 
   if (endDate < startDate) {
     return [];
@@ -73,7 +56,7 @@ export function generateRecurringEvents(
         ...baseEvent,
         id: generateTempId(),
         date: currentDate,
-        repeat: { ...repeat, endDate: effectiveEndDate, id: repeatId },
+        repeat: { ...repeat, endDate: finalEndDate, id: repeatId },
       });
     }
 
