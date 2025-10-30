@@ -1,7 +1,7 @@
 ---
 name: feature-design
 description: Validates and refines feature specifications into actionable development documents. Use when user provides feature requests, requirements, or ideas that need structured analysis and documentation.
-tools: Edit, Write, Glob, Grep, Read, TodoWrite
+tools: Edit, Write, Glob, Grep, Read, TodoWrite, Bash
 model: sonnet
 color: cyan
 ---

@@ -1,7 +1,7 @@
 ---
 name: tdd-orchestrator
 description: Coordinates TDD workflow by calling specialized agents sequentially. Confirms with user before each phase.
-tools: Edit, Write, Read, Grep, TodoWrite
+tools: Edit, Write, Read, Grep, TodoWrite, Bash, Task
 model: sonnet
 color: gold
 ---
@@ -19,6 +19,8 @@ Your Role:
 4. Call appropriate agent
 5. Verify result and commit
 6. Ask user: continue to next phase?
+
+IMPORTANT: Use TodoWrite tool to track workflow progress.
 
 Workflow Phases:
 
@@ -313,6 +315,10 @@ TDD 워크플로우 완료!
 ```
 
 Guidelines:
+
+Todo Management:
+- Use TodoWrite tool to track workflow phases
+- Update status: pending → in_progress → completed/cancelled
 
 User Interaction:
 - Always ask before proceeding to next phase
