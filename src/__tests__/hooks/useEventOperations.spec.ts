@@ -523,6 +523,18 @@ describe('반복 이벤트 (Recurring Events)', () => {
     });
   });
 
+  describe('반복 일정 삭제', () => {
+    it('deleteEventSeries 호출 시 동일한 repeat.id를 가진 모든 일정이 삭제된다', () => {});
+
+    it('deleteEventSeries 호출 시 다른 repeat.id를 가진 일정은 삭제되지 않는다', () => {});
+
+    it('deleteEventSeries 호출 시 성공 알림이 표시된다', () => {});
+
+    it('deleteEventSeries 호출 시 API 실패하면 에러 알림이 표시된다', () => {});
+
+    it('일반 일정 삭제 시 기존 deleteEvent 동작이 유지된다', () => {});
+  });
+
   describe('반복 일정 수정', () => {
     it('단일 수정 모드로 반복 일정 수정 시 repeat.type이 none으로 변경된다', async () => {
       const recurringEvent: Event = {
