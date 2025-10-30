@@ -153,57 +153,55 @@ function App() {
     }
   };
 
-  const addOrUpdateEvent = async () => {
+  const validateEventForm = (): boolean => {
     if (!title || !date || !startTime || !endTime) {
       enqueueSnackbar('필수 정보를 모두 입력해주세요.', { variant: 'error' });
-      return;
+      return false;
     }
 
     if (startTimeError || endTimeError) {
       enqueueSnackbar('시간 설정을 확인해주세요.', { variant: 'error' });
-      return;
+      return false;
     }
 
-    const eventData: Event | EventForm = {
-      id: editingEvent ? editingEvent.id : undefined,
-      title,
-      date,
-      startTime,
-      endTime,
-      description,
-      location,
-      category,
-      repeat: {
-        type: isRepeating ? repeatType : 'none',
-        interval: repeatInterval,
-        endDate: repeatEndDate || undefined,
-        id: editingEvent?.repeat.id,
-      },
-      notificationTime,
-    };
+    return true;
+  };
 
-    // 수정 모드일 때
-    if (editingEvent) {
-      if (editMode === 'series' && eventData.repeat.type !== 'none') {
-        // 전체 수정 모드: 시리즈 전체 업데이트
-        await saveEventSeries(eventData as Event);
-      } else {
-        // 단일 수정 모드 또는 일반 일정 수정
-        await saveEvent(eventData);
-      }
-      resetForm();
-      setEditMode(null);
-      return;
+  const createEventData = (): Event | EventForm => ({
+    id: editingEvent ? editingEvent.id : undefined,
+    title,
+    date,
+    startTime,
+    endTime,
+    description,
+    location,
+    category,
+    repeat: {
+      type: isRepeating ? repeatType : 'none',
+      interval: repeatInterval,
+      endDate: repeatEndDate || undefined,
+      id: editingEvent?.repeat.id,
+    },
+    notificationTime,
+  });
+
+  const handleUpdateEvent = async (eventData: Event | EventForm) => {
+    if (editMode === 'series' && eventData.repeat.type !== 'none') {
+      await saveEventSeries(eventData as Event);
+    } else {
+      await saveEvent(eventData);
     }
+    resetForm();
+    setEditMode(null);
+  };
 
-    // 반복 일정 생성 처리 (겹침 검사 건너뛰기)
+  const handleCreateEvent = async (eventData: Event | EventForm) => {
     if (isRepeating && repeatType !== 'none') {
       await saveEventList([eventData]);
       resetForm();
       return;
     }
 
-    // 일반 일정은 겹침 검사 수행
     const overlapping = findOverlappingEvents(eventData, events);
     if (overlapping.length > 0) {
       setOverlappingEvents(overlapping);
@@ -211,6 +209,18 @@ function App() {
     } else {
       await saveEvent(eventData);
       resetForm();
+    }
+  };
+
+  const addOrUpdateEvent = async () => {
+    if (!validateEventForm()) return;
+
+    const eventData = createEventData();
+
+    if (editingEvent) {
+      await handleUpdateEvent(eventData);
+    } else {
+      await handleCreateEvent(eventData);
     }
   };
 
