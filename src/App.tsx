@@ -102,9 +102,12 @@ function App() {
     editEvent,
   } = useEventForm();
 
-  const { events, saveEvent, deleteEvent, saveEventList } = useEventOperations(
+  const { events, saveEvent, deleteEvent, saveEventList, saveEventSeries } = useEventOperations(
     Boolean(editingEvent),
-    () => setEditingEvent(null)
+    () => {
+      setEditingEvent(null);
+      setEditMode(null);
+    }
   );
 
   const { notifications, notifiedEvents, setNotifications } = useNotifications(events);
@@ -113,8 +116,42 @@ function App() {
 
   const [isOverlapDialogOpen, setIsOverlapDialogOpen] = useState(false);
   const [overlappingEvents, setOverlappingEvents] = useState<Event[]>([]);
+  const [isRecurringEditDialogOpen, setIsRecurringEditDialogOpen] = useState(false);
+  const [pendingEditEvent, setPendingEditEvent] = useState<Event | null>(null);
+  const [editMode, setEditMode] = useState<'single' | 'series' | null>(null);
 
   const { enqueueSnackbar } = useSnackbar();
+
+  const handleEditEvent = (event: Event) => {
+    // 반복 일정이면 수정 모드 선택 다이얼로그 표시
+    if (event.repeat.type !== 'none') {
+      setPendingEditEvent(event);
+      setIsRecurringEditDialogOpen(true);
+    } else {
+      // 일반 일정은 바로 수정
+      editEvent(event);
+    }
+  };
+
+  const handleRecurringEditModeSelect = (mode: 'single' | 'series') => {
+    setEditMode(mode);
+    setIsRecurringEditDialogOpen(false);
+
+    if (pendingEditEvent) {
+      if (mode === 'single') {
+        // 단일 수정: repeat.type을 'none'으로 변경하여 editEvent 호출
+        const singleEvent: Event = {
+          ...pendingEditEvent,
+          repeat: { type: 'none', interval: 0 },
+        };
+        editEvent(singleEvent);
+      } else {
+        // 전체 수정: 반복 속성 유지하여 editEvent 호출
+        editEvent(pendingEditEvent);
+      }
+      setPendingEditEvent(null);
+    }
+  };
 
   const addOrUpdateEvent = async () => {
     if (!title || !date || !startTime || !endTime) {
@@ -140,11 +177,26 @@ function App() {
         type: isRepeating ? repeatType : 'none',
         interval: repeatInterval,
         endDate: repeatEndDate || undefined,
+        id: editingEvent?.repeat.id,
       },
       notificationTime,
     };
 
-    // 반복 일정 처리 (겹침 검사 건너뛰기)
+    // 수정 모드일 때
+    if (editingEvent) {
+      if (editMode === 'series' && eventData.repeat.type !== 'none') {
+        // 전체 수정 모드: 시리즈 전체 업데이트
+        await saveEventSeries(eventData as Event);
+      } else {
+        // 단일 수정 모드 또는 일반 일정 수정
+        await saveEvent(eventData);
+      }
+      resetForm();
+      setEditMode(null);
+      return;
+    }
+
+    // 반복 일정 생성 처리 (겹침 검사 건너뛰기)
     if (isRepeating && repeatType !== 'none') {
       await saveEventList([eventData]);
       resetForm();
@@ -607,7 +659,7 @@ function App() {
                     </Typography>
                   </Stack>
                   <Stack>
-                    <IconButton aria-label="Edit event" onClick={() => editEvent(event)}>
+                    <IconButton aria-label="Edit event" onClick={() => handleEditEvent(event)}>
                       <Edit />
                     </IconButton>
                     <IconButton aria-label="Delete event" onClick={() => deleteEvent(event.id)}>
@@ -660,6 +712,17 @@ function App() {
           >
             계속 진행
           </Button>
+        </DialogActions>
+      </Dialog>
+
+      <Dialog open={isRecurringEditDialogOpen} onClose={() => setIsRecurringEditDialogOpen(false)}>
+        <DialogTitle>반복 일정 수정</DialogTitle>
+        <DialogContent>
+          <DialogContentText>해당 일정만 수정하시겠어요?</DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => handleRecurringEditModeSelect('single')}>예</Button>
+          <Button onClick={() => handleRecurringEditModeSelect('series')}>아니오</Button>
         </DialogActions>
       </Dialog>
 
