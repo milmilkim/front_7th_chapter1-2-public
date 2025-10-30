@@ -279,14 +279,14 @@ describe('반복 일정 수정', () => {
         notificationTime: 10,
       };
 
-      let capturedUpdateRequest: any = null;
+      let capturedUpdateRequest = null;
 
       server.use(
         http.get('/api/events', () => {
           return HttpResponse.json({ events: [recurringEvent] });
         }),
         http.put('/api/recurring-events/:id', async ({ request }) => {
-          const body = await request.json();
+          const body = (await request.json()) as { events: Event[] };
           capturedUpdateRequest = body;
           const updatedEvent = { ...recurringEvent, ...body };
           return HttpResponse.json({ events: [updatedEvent] });
@@ -309,9 +309,9 @@ describe('반복 일정 수정', () => {
       await screen.findByText('일정이 수정되었습니다.');
 
       expect(capturedUpdateRequest).not.toBeNull();
-      expect(capturedUpdateRequest.repeat.type).toBe('daily');
-      expect(capturedUpdateRequest.repeat.id).toBe('repeat-1');
-      expect(capturedUpdateRequest.title).toBe('수정된 반복 회의');
+      expect(capturedUpdateRequest!.repeat.type).toBe('daily');
+      expect(capturedUpdateRequest!.repeat.id).toBe('repeat-1');
+      expect(capturedUpdateRequest!.title).toBe('수정된 반복 회의');
     });
 
     it('전체 수정 후 Repeat 아이콘이 유지된다', async () => {
@@ -475,7 +475,7 @@ describe('반복 일정 수정', () => {
           return new HttpResponse(null, { status: 204 });
         }),
         http.post('/api/events-list', async ({ request }) => {
-          const body = (await request.json()) as { events: any[] };
+          const body = (await request.json()) as { events: Event[] };
           const newEvents = body.events.map((event, index) => ({
             ...event,
             id: String(mockEvents.length + index + 1),
