@@ -40,6 +40,17 @@ export const useEventForm = (initialEvent?: Event) => {
     setTimeError(getTimeErrorMessage(startTime, newEndTime));
   };
 
+  const handleIsRepeatingChange = (checked: boolean) => {
+    setIsRepeating(checked);
+    if (checked) {
+      if (repeatType === 'none') {
+        setRepeatType('daily');
+      }
+    } else {
+      setRepeatType('none');
+    }
+  };
+
   const resetForm = () => {
     setTitle('');
     setDate('');
@@ -102,6 +113,7 @@ export const useEventForm = (initialEvent?: Event) => {
     setEditingEvent,
     handleStartTimeChange,
     handleEndTimeChange,
+    handleIsRepeatingChange,
     resetForm,
     editEvent,
   };
