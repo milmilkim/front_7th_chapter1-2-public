@@ -484,6 +484,7 @@ function App() {
                     type="date"
                     value={repeatEndDate}
                     onChange={(e) => setRepeatEndDate(e.target.value)}
+                    inputProps={{ max: '2025-12-31' }}
                   />
                 </FormControl>
               </Stack>

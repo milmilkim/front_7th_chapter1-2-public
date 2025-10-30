@@ -42,9 +42,13 @@ export function generateRecurringEvents(
     return events;
   }
 
+  // endDate가 2025-12-31을 초과하면 2025-12-31로 제한
+  const maxEndDate = '2025-12-31';
+  const effectiveEndDate = repeat.endDate > maxEndDate ? maxEndDate : repeat.endDate;
+
   // endDate가 startDate보다 이전이면 빈 배열 반환
   const startDate = new Date(baseEvent.date);
-  const endDate = new Date(repeat.endDate);
+  const endDate = new Date(effectiveEndDate);
 
   if (endDate < startDate) {
     return [];
@@ -68,7 +72,7 @@ export function generateRecurringEvents(
         ...baseEvent,
         id: generateTempId(),
         date: currentDate,
-        repeat: { ...repeat, id: repeatId },
+        repeat: { ...repeat, endDate: effectiveEndDate, id: repeatId },
       });
     }
 
