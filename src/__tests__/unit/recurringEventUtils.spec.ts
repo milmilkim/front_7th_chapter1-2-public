@@ -298,6 +298,27 @@ describe('generateRecurringEvents', () => {
       expect(events).toHaveLength(0);
     });
 
+    it('endDate가 없으면 MAX_END_DATE(2025-12-31)까지 이벤트가 생성된다', () => {
+      // Given
+      const baseEvent = createBaseEvent({
+        date: '2025-12-25',
+        repeat: {
+          type: 'daily',
+          interval: 1,
+        },
+      });
+
+      // When
+      const events = generateRecurringEvents(baseEvent);
+
+      // Then
+      expect(events.length).toBeGreaterThan(0);
+      expect(events[0].date).toBe('2025-12-25');
+      expect(events[events.length - 1].date).toBe('2025-12-31');
+      expect(events).toHaveLength(7); // 12/25 ~ 12/31 = 7일
+      expect(events[0].repeat.endDate).toBe('2025-12-31');
+    });
+
     it('repeat.type이 none이면 단일 이벤트만 반환한다', () => {
       // Given
       const baseEvent = createBaseEvent({
