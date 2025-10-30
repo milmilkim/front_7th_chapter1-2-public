@@ -457,12 +457,12 @@ describe('반복 일정', () => {
 
     const { user } = setup(<App />);
 
-    // When: 1일 monthly 반복 일정 생성 (1월 내에서 확인 가능하도록 1일로 변경)
-    await user.type(screen.getByLabelText('제목'), '월초 회의');
-    await user.type(screen.getByLabelText('날짜'), '2025-01-01');
+    // When: 31일 monthly 반복 일정 생성
+    await user.type(screen.getByLabelText('제목'), '월말 회의');
+    await user.type(screen.getByLabelText('날짜'), '2025-01-31');
     await user.type(screen.getByLabelText('시작 시간'), '09:00');
     await user.type(screen.getByLabelText('종료 시간'), '10:00');
-    await user.type(screen.getByLabelText('설명'), '매월 1일 회의');
+    await user.type(screen.getByLabelText('설명'), '매월 31일 회의');
     await user.type(screen.getByLabelText('위치'), '회의실 A');
 
     await user.click(screen.getByLabelText('반복 유형'));
@@ -470,18 +470,31 @@ describe('반복 일정', () => {
     await user.click(repeatTypeCombobox);
     await user.click(screen.getByRole('option', { name: 'monthly-option' }));
 
-    // 같은 달 내에서 반복되는 일정은 불가능하므로, 단일 이벤트만 확인
-    await user.type(screen.getByLabelText('반복 종료일'), '2025-01-01');
+    // 1월 31일 ~ 5월 31일까지 반복 (1월, 3월, 5월은 31일 있음, 2월, 4월은 31일 없음)
+    await user.type(screen.getByLabelText('반복 종료일'), '2025-05-31');
 
     await user.click(screen.getByTestId('event-submit-button'));
 
-    // Then: 1월 1일 일정이 표시됨
+    // Then: 31일이 있는 달에만 일정이 표시됨
+    // 1월에 월말 회의가 있어야 함
     const eventList = within(screen.getByTestId('event-list'));
-    const events = await eventList.findAllByText('월초 회의');
-    expect(events).toHaveLength(1);
+    expect(await eventList.findByText('월말 회의')).toBeInTheDocument();
 
-    // 생성된 이벤트가 monthly repeat 타입인지 확인
-    expect(mockEvents[0].repeat.type).toBe('monthly');
+    // 2월로 이동 (31일 없음 - 이벤트 없어야 함)
+    await user.click(screen.getByLabelText('Next'));
+    expect(eventList.queryByText('월말 회의')).not.toBeInTheDocument();
+
+    // 3월로 이동 (31일 있음 - 이벤트 있어야 함)
+    await user.click(screen.getByLabelText('Next'));
+    expect(await eventList.findByText('월말 회의')).toBeInTheDocument();
+
+    // 4월로 이동 (31일 없음 - 이벤트 없어야 함)
+    await user.click(screen.getByLabelText('Next'));
+    expect(eventList.queryByText('월말 회의')).not.toBeInTheDocument();
+
+    // 5월로 이동 (31일 있음 - 이벤트 있어야 함)
+    await user.click(screen.getByLabelText('Next'));
+    expect(await eventList.findByText('월말 회의')).toBeInTheDocument();
 
     server.resetHandlers();
   });
@@ -523,21 +536,30 @@ describe('반복 일정', () => {
     await user.click(repeatTypeCombobox);
     await user.click(screen.getByRole('option', { name: 'yearly-option' }));
 
-    // 같은 달/년 내에서만 확인 가능하므로 단일 이벤트만 확인
-    await user.type(screen.getByLabelText('반복 종료일'), '2024-02-29');
+    // 2024년 ~ 2027년까지 반복 (2024는 윤년, 2025-2027은 평년)
+    await user.type(screen.getByLabelText('반복 종료일'), '2027-02-28');
 
     await user.click(screen.getByTestId('event-submit-button'));
 
-    // Then: 2024년 2월 29일 일정이 표시됨
+    // Then: 윤년에만 일정이 표시됨
+    // 2024년 2월(윤년)에 윤년 기념일이 있어야 함
     const eventList = within(screen.getByTestId('event-list'));
-    const events = await eventList.findAllByText('윤년 기념일');
-    expect(events).toHaveLength(1);
+    expect(await eventList.findByText('윤년 기념일')).toBeInTheDocument();
 
-    // 생성된 이벤트가 yearly repeat 타입인지 확인
-    expect(mockEvents[0].repeat.type).toBe('yearly');
+    // 2025년 2월로 이동 (평년 - 이벤트 없어야 함)
+    for (let i = 0; i < 12; i++) {
+      await user.click(screen.getByLabelText('Next'));
+    }
+    expect(eventList.queryByText('윤년 기념일')).not.toBeInTheDocument();
+
+    // 2027년 2월로 이동 (평년 - 이벤트 없어야 함)
+    for (let i = 0; i < 24; i++) {
+      await user.click(screen.getByLabelText('Next'));
+    }
+    expect(eventList.queryByText('윤년 기념일')).not.toBeInTheDocument();
 
     server.resetHandlers();
-  });
+  }, 10000);
 
   it('반복 일정 생성 후 성공 알림이 표시된다', async () => {
     // Given: API 모킹
