@@ -670,13 +670,325 @@ describe('반복 일정', () => {
     server.resetHandlers();
   });
 
-  it('반복 일정 삭제 시 확인 다이얼로그가 표시된다', () => {});
+  it('반복 일정 삭제 시 확인 다이얼로그가 표시된다', async () => {
+    // Given: 반복 일정이 있는 상태
+    const mockEvents: Event[] = [
+      {
+        id: '1',
+        title: '반복 회의',
+        date: '2025-10-15',
+        startTime: '09:00',
+        endTime: '10:00',
+        description: '매일 회의',
+        location: '회의실 A',
+        category: '업무',
+        repeat: { type: 'daily', interval: 1, endDate: '2025-10-17', id: 'repeat-1' },
+        notificationTime: 10,
+      },
+      {
+        id: '2',
+        title: '반복 회의',
+        date: '2025-10-16',
+        startTime: '09:00',
+        endTime: '10:00',
+        description: '매일 회의',
+        location: '회의실 A',
+        category: '업무',
+        repeat: { type: 'daily', interval: 1, endDate: '2025-10-17', id: 'repeat-1' },
+        notificationTime: 10,
+      },
+    ];
 
-  it('반복 일정 삭제 다이얼로그에서 "예" 클릭 시 해당 일정만 삭제된다', () => {});
+    server.use(
+      http.get('/api/events', () => {
+        return HttpResponse.json({ events: mockEvents });
+      })
+    );
 
-  it('반복 일정 삭제 다이얼로그에서 "아니오" 클릭 시 시리즈 전체가 삭제된다', () => {});
+    const { user } = setup(<App />);
 
-  it('일반 일정 삭제 시 다이얼로그 없이 바로 삭제된다', () => {});
+    // Wait for events to load
+    await screen.findByText('일정 로딩 완료!');
 
-  it('시리즈 삭제 후 이벤트 목록이 업데이트된다', () => {});
+    // When: 반복 일정의 삭제 버튼 클릭
+    const deleteButtons = screen.getAllByLabelText('Delete event');
+    await user.click(deleteButtons[0]);
+
+    // Then: 확인 다이얼로그가 표시됨
+    expect(screen.getByText('반복 일정 삭제')).toBeInTheDocument();
+    expect(screen.getByText('해당 일정만 삭제하시겠어요?')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '예' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '아니오' })).toBeInTheDocument();
+
+    server.resetHandlers();
+  });
+
+  it('반복 일정 삭제 다이얼로그에서 "예" 클릭 시 해당 일정만 삭제된다', async () => {
+    // Given: 반복 일정 시리즈가 있는 상태
+    const mockEvents: Event[] = [
+      {
+        id: '1',
+        title: '반복 회의',
+        date: '2025-10-15',
+        startTime: '09:00',
+        endTime: '10:00',
+        description: '매일 회의',
+        location: '회의실 A',
+        category: '업무',
+        repeat: { type: 'daily', interval: 1, endDate: '2025-10-17', id: 'repeat-1' },
+        notificationTime: 10,
+      },
+      {
+        id: '2',
+        title: '반복 회의',
+        date: '2025-10-16',
+        startTime: '09:00',
+        endTime: '10:00',
+        description: '매일 회의',
+        location: '회의실 A',
+        category: '업무',
+        repeat: { type: 'daily', interval: 1, endDate: '2025-10-17', id: 'repeat-1' },
+        notificationTime: 10,
+      },
+      {
+        id: '3',
+        title: '반복 회의',
+        date: '2025-10-17',
+        startTime: '09:00',
+        endTime: '10:00',
+        description: '매일 회의',
+        location: '회의실 A',
+        category: '업무',
+        repeat: { type: 'daily', interval: 1, endDate: '2025-10-17', id: 'repeat-1' },
+        notificationTime: 10,
+      },
+    ];
+
+    server.use(
+      http.get('/api/events', () => {
+        return HttpResponse.json({ events: mockEvents });
+      }),
+      http.delete('/api/events/:id', ({ params }) => {
+        const id = params.id as string;
+        const index = mockEvents.findIndex((e) => e.id === id);
+        if (index !== -1) {
+          mockEvents.splice(index, 1);
+        }
+        return new HttpResponse(null, { status: 204 });
+      })
+    );
+
+    const { user } = setup(<App />);
+    await screen.findByText('일정 로딩 완료!');
+
+    // When: 첫 번째 일정 삭제 시 "예" 클릭 (해당 일정만 삭제)
+    const deleteButtons = screen.getAllByLabelText('Delete event');
+    await user.click(deleteButtons[0]);
+
+    expect(screen.getByText('해당 일정만 삭제하시겠어요?')).toBeInTheDocument();
+
+    server.use(
+      http.get('/api/events', () => {
+        return HttpResponse.json({ events: mockEvents });
+      })
+    );
+
+    await user.click(screen.getByRole('button', { name: '예' }));
+
+    // Then: 해당 일정만 삭제되고 나머지는 유지됨
+    await act(() => Promise.resolve(null));
+    const eventList = within(screen.getByTestId('event-list'));
+    const remainingEvents = eventList.getAllByText('반복 회의');
+    expect(remainingEvents).toHaveLength(2);
+
+    server.resetHandlers();
+  });
+
+  it('반복 일정 삭제 다이얼로그에서 "아니오" 클릭 시 시리즈 전체가 삭제된다', async () => {
+    // Given: 반복 일정 시리즈가 있는 상태
+    const mockEvents: Event[] = [
+      {
+        id: '1',
+        title: '반복 회의',
+        date: '2025-10-15',
+        startTime: '09:00',
+        endTime: '10:00',
+        description: '매일 회의',
+        location: '회의실 A',
+        category: '업무',
+        repeat: { type: 'daily', interval: 1, endDate: '2025-10-17', id: 'repeat-1' },
+        notificationTime: 10,
+      },
+      {
+        id: '2',
+        title: '반복 회의',
+        date: '2025-10-16',
+        startTime: '09:00',
+        endTime: '10:00',
+        description: '매일 회의',
+        location: '회의실 A',
+        category: '업무',
+        repeat: { type: 'daily', interval: 1, endDate: '2025-10-17', id: 'repeat-1' },
+        notificationTime: 10,
+      },
+      {
+        id: '3',
+        title: '반복 회의',
+        date: '2025-10-17',
+        startTime: '09:00',
+        endTime: '10:00',
+        description: '매일 회의',
+        location: '회의실 A',
+        category: '업무',
+        repeat: { type: 'daily', interval: 1, endDate: '2025-10-17', id: 'repeat-1' },
+        notificationTime: 10,
+      },
+    ];
+
+    server.use(
+      http.get('/api/events', () => {
+        return HttpResponse.json({ events: mockEvents });
+      }),
+      http.delete('/api/events/:id', ({ params }) => {
+        const id = params.id as string;
+        const index = mockEvents.findIndex((e) => e.id === id);
+        if (index !== -1) {
+          mockEvents.splice(index, 1);
+        }
+        return new HttpResponse(null, { status: 204 });
+      })
+    );
+
+    const { user } = setup(<App />);
+    await screen.findByText('일정 로딩 완료!');
+
+    // When: 반복 일정 삭제 시 "아니오" 클릭 (시리즈 전체 삭제)
+    const deleteButtons = screen.getAllByLabelText('Delete event');
+    await user.click(deleteButtons[0]);
+
+    expect(screen.getByText('해당 일정만 삭제하시겠어요?')).toBeInTheDocument();
+
+    server.use(
+      http.get('/api/events', () => {
+        return HttpResponse.json({ events: [] });
+      })
+    );
+
+    await user.click(screen.getByRole('button', { name: '아니오' }));
+
+    // Then: 시리즈 전체가 삭제됨
+    await act(() => Promise.resolve(null));
+    const eventList = within(screen.getByTestId('event-list'));
+    expect(eventList.queryByText('반복 회의')).not.toBeInTheDocument();
+    expect(eventList.getByText('검색 결과가 없습니다.')).toBeInTheDocument();
+
+    server.resetHandlers();
+  });
+
+  it('일반 일정 삭제 시 다이얼로그 없이 바로 삭제된다', async () => {
+    // Given: 일반 일정이 있는 상태
+    setupMockHandlerDeletion();
+
+    const { user } = setup(<App />);
+    await screen.findByText('일정 로딩 완료!');
+
+    const eventList = within(screen.getByTestId('event-list'));
+    expect(eventList.getByText('삭제할 이벤트')).toBeInTheDocument();
+
+    // When: 일반 일정 삭제 버튼 클릭
+    const deleteButton = screen.getByLabelText('Delete event');
+    await user.click(deleteButton);
+
+    // Then: 다이얼로그 없이 바로 삭제됨
+    expect(screen.queryByText('반복 일정 삭제')).not.toBeInTheDocument();
+    expect(screen.queryByText('해당 일정만 삭제하시겠어요?')).not.toBeInTheDocument();
+
+    await act(() => Promise.resolve(null));
+    expect(eventList.queryByText('삭제할 이벤트')).not.toBeInTheDocument();
+  });
+
+  it('시리즈 삭제 후 이벤트 목록이 업데이트된다', async () => {
+    // Given: 여러 반복 일정 시리즈가 있는 상태
+    const mockEvents: Event[] = [
+      {
+        id: '1',
+        title: '반복 회의 A',
+        date: '2025-10-15',
+        startTime: '09:00',
+        endTime: '10:00',
+        description: '시리즈 A',
+        location: '회의실 A',
+        category: '업무',
+        repeat: { type: 'daily', interval: 1, endDate: '2025-10-17', id: 'repeat-1' },
+        notificationTime: 10,
+      },
+      {
+        id: '2',
+        title: '반복 회의 A',
+        date: '2025-10-16',
+        startTime: '09:00',
+        endTime: '10:00',
+        description: '시리즈 A',
+        location: '회의실 A',
+        category: '업무',
+        repeat: { type: 'daily', interval: 1, endDate: '2025-10-17', id: 'repeat-1' },
+        notificationTime: 10,
+      },
+      {
+        id: '3',
+        title: '반복 회의 B',
+        date: '2025-10-15',
+        startTime: '14:00',
+        endTime: '15:00',
+        description: '시리즈 B',
+        location: '회의실 B',
+        category: '업무',
+        repeat: { type: 'weekly', interval: 1, endDate: '2025-10-29', id: 'repeat-2' },
+        notificationTime: 10,
+      },
+    ];
+
+    server.use(
+      http.get('/api/events', () => {
+        return HttpResponse.json({ events: mockEvents });
+      }),
+      http.delete('/api/events/:id', ({ params }) => {
+        const id = params.id as string;
+        const index = mockEvents.findIndex((e) => e.id === id);
+        if (index !== -1) {
+          mockEvents.splice(index, 1);
+        }
+        return new HttpResponse(null, { status: 204 });
+      })
+    );
+
+    const { user } = setup(<App />);
+    await screen.findByText('일정 로딩 완료!');
+
+    const eventList = within(screen.getByTestId('event-list'));
+    expect(eventList.getAllByText('반복 회의 A')).toHaveLength(2);
+    expect(eventList.getByText('반복 회의 B')).toBeInTheDocument();
+
+    // When: 반복 회의 A 시리즈 삭제 ("아니오" 클릭)
+    const deleteButtons = screen.getAllByLabelText('Delete event');
+    await user.click(deleteButtons[0]);
+
+    expect(screen.getByText('해당 일정만 삭제하시겠어요?')).toBeInTheDocument();
+
+    const remainingEvents = mockEvents.filter((e) => e.repeat.id !== 'repeat-1');
+    server.use(
+      http.get('/api/events', () => {
+        return HttpResponse.json({ events: remainingEvents });
+      })
+    );
+
+    await user.click(screen.getByRole('button', { name: '아니오' }));
+
+    // Then: 시리즈 A는 삭제되고 시리즈 B만 남음
+    await act(() => Promise.resolve(null));
+    expect(eventList.queryByText('반복 회의 A')).not.toBeInTheDocument();
+    expect(await eventList.findByText('반복 회의 B')).toBeInTheDocument();
+
+    server.resetHandlers();
+  });
 });

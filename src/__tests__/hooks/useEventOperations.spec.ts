@@ -524,15 +524,332 @@ describe('반복 이벤트 (Recurring Events)', () => {
   });
 
   describe('반복 일정 삭제', () => {
-    it('deleteEventSeries 호출 시 동일한 repeat.id를 가진 모든 일정이 삭제된다', () => {});
+    it('deleteEventSeries 호출 시 동일한 repeat.id를 가진 모든 일정이 삭제된다', async () => {
+      // Given: 동일한 repeat.id를 가진 반복 일정과 다른 repeat.id를 가진 일정 설정
+      const recurringEvents: Event[] = [
+        {
+          id: '1',
+          title: '반복 회의',
+          date: '2025-10-15',
+          startTime: '09:00',
+          endTime: '10:00',
+          description: '매일 회의',
+          location: '회의실 A',
+          category: '업무',
+          repeat: { type: 'daily', interval: 1, endDate: '2025-10-20', id: 'repeat-1' },
+          notificationTime: 10,
+        },
+        {
+          id: '2',
+          title: '반복 회의',
+          date: '2025-10-16',
+          startTime: '09:00',
+          endTime: '10:00',
+          description: '매일 회의',
+          location: '회의실 A',
+          category: '업무',
+          repeat: { type: 'daily', interval: 1, endDate: '2025-10-20', id: 'repeat-1' },
+          notificationTime: 10,
+        },
+        {
+          id: '3',
+          title: '반복 회의',
+          date: '2025-10-17',
+          startTime: '09:00',
+          endTime: '10:00',
+          description: '매일 회의',
+          location: '회의실 A',
+          category: '업무',
+          repeat: { type: 'daily', interval: 1, endDate: '2025-10-20', id: 'repeat-1' },
+          notificationTime: 10,
+        },
+        {
+          id: '4',
+          title: '다른 반복 회의',
+          date: '2025-10-15',
+          startTime: '14:00',
+          endTime: '15:00',
+          description: '다른 시리즈',
+          location: '회의실 B',
+          category: '업무',
+          repeat: { type: 'weekly', interval: 1, endDate: '2025-10-29', id: 'repeat-2' },
+          notificationTime: 10,
+        },
+      ];
 
-    it('deleteEventSeries 호출 시 다른 repeat.id를 가진 일정은 삭제되지 않는다', () => {});
+      const remainingEvents = recurringEvents.filter((e) => e.repeat.id !== 'repeat-1');
 
-    it('deleteEventSeries 호출 시 성공 알림이 표시된다', () => {});
+      server.use(
+        http.get('/api/events', () => {
+          return HttpResponse.json({ events: recurringEvents });
+        }),
+        http.delete('/api/events/:id', ({ params }) => {
+          const id = params.id as string;
+          const index = recurringEvents.findIndex((e) => e.id === id);
+          if (index !== -1) {
+            recurringEvents.splice(index, 1);
+          }
+          return new HttpResponse(null, { status: 204 });
+        })
+      );
 
-    it('deleteEventSeries 호출 시 API 실패하면 에러 알림이 표시된다', () => {});
+      const { result } = renderHook(() => useEventOperations(false));
+      await act(() => Promise.resolve(null));
 
-    it('일반 일정 삭제 시 기존 deleteEvent 동작이 유지된다', () => {});
+      // When: deleteEventSeries 호출
+      server.use(
+        http.get('/api/events', () => {
+          return HttpResponse.json({ events: remainingEvents });
+        })
+      );
+
+      await act(async () => {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const hook = result.current as any;
+        if (hook.deleteEventSeries) {
+          await hook.deleteEventSeries('repeat-1');
+        }
+      });
+
+      // Then: repeat.id가 'repeat-1'인 일정만 삭제됨
+      expect(result.current.events).toHaveLength(1);
+      expect(result.current.events[0].id).toBe('4');
+      expect(result.current.events[0].repeat.id).toBe('repeat-2');
+
+      server.resetHandlers();
+    });
+
+    it('deleteEventSeries 호출 시 다른 repeat.id를 가진 일정은 삭제되지 않는다', async () => {
+      // Given: 여러 반복 일정 시리즈 설정
+      const recurringEvents: Event[] = [
+        {
+          id: '1',
+          title: '반복 회의 A',
+          date: '2025-10-15',
+          startTime: '09:00',
+          endTime: '10:00',
+          description: '시리즈 A',
+          location: '회의실 A',
+          category: '업무',
+          repeat: { type: 'daily', interval: 1, endDate: '2025-10-17', id: 'repeat-1' },
+          notificationTime: 10,
+        },
+        {
+          id: '2',
+          title: '반복 회의 A',
+          date: '2025-10-16',
+          startTime: '09:00',
+          endTime: '10:00',
+          description: '시리즈 A',
+          location: '회의실 A',
+          category: '업무',
+          repeat: { type: 'daily', interval: 1, endDate: '2025-10-17', id: 'repeat-1' },
+          notificationTime: 10,
+        },
+        {
+          id: '3',
+          title: '반복 회의 B',
+          date: '2025-10-15',
+          startTime: '14:00',
+          endTime: '15:00',
+          description: '시리즈 B',
+          location: '회의실 B',
+          category: '업무',
+          repeat: { type: 'weekly', interval: 1, endDate: '2025-10-29', id: 'repeat-2' },
+          notificationTime: 10,
+        },
+        {
+          id: '4',
+          title: '반복 회의 B',
+          date: '2025-10-22',
+          startTime: '14:00',
+          endTime: '15:00',
+          description: '시리즈 B',
+          location: '회의실 B',
+          category: '업무',
+          repeat: { type: 'weekly', interval: 1, endDate: '2025-10-29', id: 'repeat-2' },
+          notificationTime: 10,
+        },
+      ];
+
+      const remainingEvents = recurringEvents.filter((e) => e.repeat.id !== 'repeat-1');
+
+      server.use(
+        http.get('/api/events', () => {
+          return HttpResponse.json({ events: recurringEvents });
+        }),
+        http.delete('/api/events/:id', ({ params }) => {
+          const id = params.id as string;
+          const index = recurringEvents.findIndex((e) => e.id === id);
+          if (index !== -1) {
+            recurringEvents.splice(index, 1);
+          }
+          return new HttpResponse(null, { status: 204 });
+        })
+      );
+
+      const { result } = renderHook(() => useEventOperations(false));
+      await act(() => Promise.resolve(null));
+
+      // When: repeat-1 시리즈 삭제
+      server.use(
+        http.get('/api/events', () => {
+          return HttpResponse.json({ events: remainingEvents });
+        })
+      );
+
+      await act(async () => {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const hook = result.current as any;
+        if (hook.deleteEventSeries) {
+          await hook.deleteEventSeries('repeat-1');
+        }
+      });
+
+      // Then: repeat-2 시리즈는 그대로 유지됨
+      expect(result.current.events).toHaveLength(2);
+      expect(result.current.events.every((e) => e.repeat.id === 'repeat-2')).toBe(true);
+      expect(result.current.events[0].title).toBe('반복 회의 B');
+      expect(result.current.events[1].title).toBe('반복 회의 B');
+
+      server.resetHandlers();
+    });
+
+    it('deleteEventSeries 호출 시 성공 알림이 표시된다', async () => {
+      // Given: 반복 일정 시리즈 설정
+      const recurringEvents: Event[] = [
+        {
+          id: '1',
+          title: '반복 회의',
+          date: '2025-10-15',
+          startTime: '09:00',
+          endTime: '10:00',
+          description: '매일 회의',
+          location: '회의실 A',
+          category: '업무',
+          repeat: { type: 'daily', interval: 1, endDate: '2025-10-17', id: 'repeat-1' },
+          notificationTime: 10,
+        },
+        {
+          id: '2',
+          title: '반복 회의',
+          date: '2025-10-16',
+          startTime: '09:00',
+          endTime: '10:00',
+          description: '매일 회의',
+          location: '회의실 A',
+          category: '업무',
+          repeat: { type: 'daily', interval: 1, endDate: '2025-10-17', id: 'repeat-1' },
+          notificationTime: 10,
+        },
+      ];
+
+      server.use(
+        http.get('/api/events', () => {
+          return HttpResponse.json({ events: recurringEvents });
+        }),
+        http.delete('/api/events/:id', () => {
+          return new HttpResponse(null, { status: 204 });
+        })
+      );
+
+      const { result } = renderHook(() => useEventOperations(false));
+      await act(() => Promise.resolve(null));
+
+      enqueueSnackbarFn.mockClear();
+
+      // When: deleteEventSeries 호출
+      server.use(
+        http.get('/api/events', () => {
+          return HttpResponse.json({ events: [] });
+        })
+      );
+
+      await act(async () => {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const hook = result.current as any;
+        if (hook.deleteEventSeries) {
+          await hook.deleteEventSeries('repeat-1');
+        }
+      });
+
+      // Then: 성공 알림 표시
+      expect(enqueueSnackbarFn).toHaveBeenCalledWith('일정이 삭제되었습니다.', {
+        variant: 'info',
+      });
+
+      server.resetHandlers();
+    });
+
+    it('deleteEventSeries 호출 시 API 실패하면 에러 알림이 표시된다', async () => {
+      // Given: 반복 일정 시리즈 설정
+      const recurringEvents: Event[] = [
+        {
+          id: '1',
+          title: '반복 회의',
+          date: '2025-10-15',
+          startTime: '09:00',
+          endTime: '10:00',
+          description: '매일 회의',
+          location: '회의실 A',
+          category: '업무',
+          repeat: { type: 'daily', interval: 1, endDate: '2025-10-17', id: 'repeat-1' },
+          notificationTime: 10,
+        },
+      ];
+
+      server.use(
+        http.get('/api/events', () => {
+          return HttpResponse.json({ events: recurringEvents });
+        }),
+        http.delete('/api/events/:id', () => {
+          return new HttpResponse(null, { status: 500 });
+        })
+      );
+
+      const { result } = renderHook(() => useEventOperations(false));
+      await act(() => Promise.resolve(null));
+
+      enqueueSnackbarFn.mockClear();
+
+      // When: deleteEventSeries 호출 (API 실패)
+      await act(async () => {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const hook = result.current as any;
+        if (hook.deleteEventSeries) {
+          await hook.deleteEventSeries('repeat-1');
+        }
+      });
+
+      // Then: 에러 알림 표시
+      expect(enqueueSnackbarFn).toHaveBeenCalledWith('일정 삭제 실패', { variant: 'error' });
+
+      server.resetHandlers();
+    });
+
+    it('일반 일정 삭제 시 기존 deleteEvent 동작이 유지된다', async () => {
+      // Given: 일반 일정 설정
+      setupMockHandlerDeletion();
+
+      const { result } = renderHook(() => useEventOperations(false));
+      await act(() => Promise.resolve(null));
+
+      expect(result.current.events).toHaveLength(1);
+      expect(result.current.events[0].title).toBe('삭제할 이벤트');
+
+      enqueueSnackbarFn.mockClear();
+
+      // When: deleteEvent 호출
+      await act(async () => {
+        await result.current.deleteEvent('1');
+      });
+
+      // Then: 일정이 삭제되고 성공 알림 표시
+      expect(result.current.events).toHaveLength(0);
+      expect(enqueueSnackbarFn).toHaveBeenCalledWith('일정이 삭제되었습니다.', {
+        variant: 'info',
+      });
+    });
   });
 
   describe('반복 일정 수정', () => {
