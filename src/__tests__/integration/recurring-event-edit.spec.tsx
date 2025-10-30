@@ -134,8 +134,8 @@ describe('반복 일정 수정', () => {
       await user.click(screen.getByTestId('event-submit-button'));
 
       expect(capturedUpdateRequest).not.toBeNull();
-      expect(capturedUpdateRequest?.repeat.type).toBe('none');
-      expect(capturedUpdateRequest?.title).toBe('수정된 회의');
+      expect(capturedUpdateRequest!.repeat.type).toBe('none');
+      expect(capturedUpdateRequest!.title).toBe('수정된 회의');
     });
 
     it('단일 일정으로 변환 후 Repeat 아이콘이 사라진다', async () => {
@@ -306,9 +306,9 @@ describe('반복 일정 수정', () => {
       await user.click(screen.getByTestId('event-submit-button'));
 
       expect(capturedUpdateRequest).not.toBeNull();
-      expect(capturedUpdateRequest?.repeat.type).toBe('daily');
-      expect(capturedUpdateRequest?.repeat.id).toBe('repeat-1');
-      expect(capturedUpdateRequest?.title).toBe('수정된 반복 회의');
+      expect(capturedUpdateRequest!.repeat.type).toBe('daily');
+      expect(capturedUpdateRequest!.repeat.id).toBe('repeat-1');
+      expect(capturedUpdateRequest!.title).toBe('수정된 반복 회의');
     });
 
     it('전체 수정 후 Repeat 아이콘이 유지된다', async () => {
@@ -399,17 +399,15 @@ describe('반복 일정 수정', () => {
         description: '수정된 설명',
       }));
 
-      let updateCallCount = 0;
+      let updateCalled = false;
 
       server.use(
         http.get('/api/events', () => {
           return HttpResponse.json({ events: recurringEvents });
         }),
-        http.put('/api/events/:id', async ({ params }) => {
-          updateCallCount++;
-          const eventId = params.id as string;
-          const updated = updatedEvents.find((e) => e.id === eventId);
-          return HttpResponse.json(updated);
+        http.put('/api/recurring-events/:repeatId', async () => {
+          updateCalled = true;
+          return HttpResponse.json(updatedEvents);
         })
       );
 
@@ -437,12 +435,11 @@ describe('반복 일정 수정', () => {
 
       await screen.findByText('일정이 수정되었습니다.');
 
-      expect(updateCallCount).toBeGreaterThan(1);
+      expect(updateCalled).toBe(true);
 
       const eventList = within(screen.getByTestId('event-list'));
       const updatedTitles = eventList.getAllByText('수정된 반복 회의');
       expect(updatedTitles.length).toBeGreaterThan(1);
-    })
-  })
-})
-
+    });
+  });
+});
