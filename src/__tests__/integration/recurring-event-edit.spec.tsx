@@ -57,7 +57,7 @@ describe('반복 일정 수정', () => {
       await user.click(screen.getByLabelText('Edit event'));
 
       expect(screen.getByText('해당 일정만 수정하시겠어요?')).toBeInTheDocument();
-    })
+    });
 
     it('일반 일정 수정 시 확인 다이얼로그가 표시되지 않는다', async () => {
       const normalEvent: Event = {
@@ -87,8 +87,8 @@ describe('반복 일정 수정', () => {
 
       expect(screen.queryByText('해당 일정만 수정하시겠어요?')).not.toBeInTheDocument();
       expect(screen.getByLabelText('제목')).toHaveValue('일반 회의');
-    })
-  })
+    });
+  });
 
   describe('단일 수정 모드 (예 선택)', () => {
     it('반복 일정에서 "예"를 선택하면 단일 일정으로 변환된다', async () => {
@@ -136,7 +136,7 @@ describe('반복 일정 수정', () => {
       expect(capturedUpdateRequest).not.toBeNull();
       expect(capturedUpdateRequest?.repeat.type).toBe('none');
       expect(capturedUpdateRequest?.title).toBe('수정된 회의');
-    })
+    });
 
     it('단일 일정으로 변환 후 Repeat 아이콘이 사라진다', async () => {
       const recurringEvent: Event = {
@@ -191,7 +191,7 @@ describe('반복 일정 수정', () => {
       await screen.findByText('일정이 수정되었습니다.');
 
       expect(within(monthView).queryByTestId('RepeatIcon')).not.toBeInTheDocument();
-    })
+    });
 
     it('단일 수정 시 다른 반복 일정 인스턴스는 변경되지 않는다', async () => {
       const recurringEvents: Event[] = [
@@ -261,8 +261,8 @@ describe('반복 일정 수정', () => {
       const eventList = within(screen.getByTestId('event-list'));
       expect(eventList.getByText('수정된 회의')).toBeInTheDocument();
       expect(eventList.getAllByText('반복 회의')).toHaveLength(1);
-    })
-  })
+    });
+  });
 
   describe('전체 수정 모드 (아니오 선택)', () => {
     it('반복 일정에서 "아니오"를 선택하면 반복 속성이 유지된다', async () => {
@@ -309,7 +309,7 @@ describe('반복 일정 수정', () => {
       expect(capturedUpdateRequest?.repeat.type).toBe('daily');
       expect(capturedUpdateRequest?.repeat.id).toBe('repeat-1');
       expect(capturedUpdateRequest?.title).toBe('수정된 반복 회의');
-    })
+    });
 
     it('전체 수정 후 Repeat 아이콘이 유지된다', async () => {
       const recurringEvent: Event = {
@@ -363,7 +363,7 @@ describe('반복 일정 수정', () => {
       await screen.findByText('일정이 수정되었습니다.');
 
       expect(within(monthView).getByTestId('RepeatIcon')).toBeInTheDocument();
-    })
+    });
 
     it('전체 수정 시 동일한 repeat.id를 가진 모든 일정이 업데이트된다', async () => {
       const recurringEvents: Event[] = [
