@@ -932,6 +932,17 @@ describe('반복 일정', () => {
           mockEvents.splice(index, 1);
         }
         return new HttpResponse(null, { status: 204 });
+      }),
+      http.delete('/api/recurring-events/:repeatId', ({ params }) => {
+        const repeatId = params.repeatId as string;
+        const eventsToRemove = mockEvents.filter((e) => e.repeat.id === repeatId);
+        eventsToRemove.forEach((event) => {
+          const index = mockEvents.findIndex((e) => e.id === event.id);
+          if (index !== -1) {
+            mockEvents.splice(index, 1);
+          }
+        });
+        return new HttpResponse(null, { status: 204 });
       })
     );
 
@@ -944,16 +955,10 @@ describe('반복 일정', () => {
 
     expect(screen.getByText('해당 일정만 삭제하시겠어요?')).toBeInTheDocument();
 
-    server.use(
-      http.get('/api/events', () => {
-        return HttpResponse.json({ events: [] });
-      })
-    );
-
     await user.click(screen.getByRole('button', { name: '아니오' }));
 
     // Then: 시리즈 전체가 삭제됨
-    await act(() => Promise.resolve(null));
+    await screen.findByText('일정이 삭제되었습니다.');
     const eventList = within(screen.getByTestId('event-list'));
     expect(eventList.queryByText('반복 회의')).not.toBeInTheDocument();
     expect(eventList.getByText('검색 결과가 없습니다.')).toBeInTheDocument();
@@ -1035,6 +1040,17 @@ describe('반복 일정', () => {
           mockEvents.splice(index, 1);
         }
         return new HttpResponse(null, { status: 204 });
+      }),
+      http.delete('/api/recurring-events/:repeatId', ({ params }) => {
+        const repeatId = params.repeatId as string;
+        const eventsToRemove = mockEvents.filter((e) => e.repeat.id === repeatId);
+        eventsToRemove.forEach((event) => {
+          const index = mockEvents.findIndex((e) => e.id === event.id);
+          if (index !== -1) {
+            mockEvents.splice(index, 1);
+          }
+        });
+        return new HttpResponse(null, { status: 204 });
       })
     );
 
@@ -1051,18 +1067,11 @@ describe('반복 일정', () => {
 
     expect(screen.getByText('해당 일정만 삭제하시겠어요?')).toBeInTheDocument();
 
-    const remainingEvents = mockEvents.filter((e) => e.repeat.id !== 'repeat-1');
-    server.use(
-      http.get('/api/events', () => {
-        return HttpResponse.json({ events: remainingEvents });
-      })
-    );
-
     await user.click(screen.getByRole('button', { name: '아니오' }));
 
     // Then: 시리즈 A는 삭제되고 시리즈 B만 남음
-    await act(() => Promise.resolve(null));
-    expect(eventList.queryByText('반복 회의 A')).not.toBeInTheDocument();
+    await screen.findByText('일정이 삭제되었습니다.');
+    expect(screen.queryByText('반복 회의 A')).not.toBeInTheDocument();
     expect(await eventList.findByText('반복 회의 B')).toBeInTheDocument();
 
     server.resetHandlers();
